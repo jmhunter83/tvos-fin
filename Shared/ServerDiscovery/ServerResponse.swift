@@ -20,8 +20,8 @@ extension ServerDiscovery {
         let id: String
         let name: String
 
-        var url: URL {
-            URL(string: address)!
+        var url: URL? {
+            URL(string: address)
         }
 
         var host: String {
@@ -40,8 +40,9 @@ extension ServerDiscovery {
             return 7359
         }
 
-        var asServerState: ServerState {
-            .init(
+        var asServerState: ServerState? {
+            guard let url = url else { return nil }
+            return .init(
                 urls: [url],
                 currentURL: url,
                 name: name,

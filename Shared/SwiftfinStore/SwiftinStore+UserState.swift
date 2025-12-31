@@ -51,7 +51,11 @@ extension UserState {
             return accessToken
         }
         nonmutating set {
-            Container.shared.keychainService().set(newValue, forKey: "\(id)-accessToken")
+            Container.shared.keychainService().set(
+                newValue,
+                forKey: "\(id)-accessToken",
+                withAccess: .accessibleWhenUnlockedThisDeviceOnly
+            )
         }
     }
 
@@ -78,7 +82,11 @@ extension UserState {
             return pin
         }
         nonmutating set {
-            Container.shared.keychainService().set(newValue, forKey: "\(id)-pin")
+            Container.shared.keychainService().set(
+                newValue,
+                forKey: "\(id)-pin",
+                withAccess: .accessibleWhenUnlockedThisDeviceOnly
+            )
         }
     }
 

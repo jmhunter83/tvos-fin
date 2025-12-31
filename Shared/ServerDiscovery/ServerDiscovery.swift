@@ -48,7 +48,7 @@ class ServerDiscovery {
             let response = try JSONDecoder().decode(ServerResponse.self, from: data)
             discoveredServersPublisher.send(response)
 
-            logger.debug("Found local server: \"\(response.name)\" at: \(response.url.absoluteString)")
+            logger.debug("Found local server: \"\(response.name)\" at: \(response.url?.absoluteString ?? "unknown")")
         } catch {
             logger.debug("Unable to decode local server response from: \(ipAddress):\(port)")
         }

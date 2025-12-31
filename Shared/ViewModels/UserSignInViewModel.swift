@@ -222,6 +222,11 @@ final class UserSignInViewModel: ViewModel {
             return newUser.state
         }
 
+        guard let savedUserState else {
+            logger.critical("Failed to get state for newly created user")
+            throw ErrorMessage(L10n.unknownError)
+        }
+
         savedUserState.accessPolicy = accessPolicy
         savedUserState.accessToken = user.state.accessToken
         savedUserState.data = user.data

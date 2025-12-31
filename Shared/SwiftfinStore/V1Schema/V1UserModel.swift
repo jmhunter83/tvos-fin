@@ -28,8 +28,10 @@ extension SwiftfinStore.V1 {
         @Field.Relationship("server")
         var server: StoredServer?
 
-        var state: UserState {
-            guard let server = server else { fatalError("No server associated with user") }
+        var state: UserState? {
+            guard let server = server else {
+                return nil
+            }
             return .init(
                 id: id,
                 serverID: server.id,

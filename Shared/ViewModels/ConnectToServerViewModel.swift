@@ -65,7 +65,9 @@ final class ConnectToServerViewModel: ViewModel {
 
             for await response in discovery.discoveredServers.values {
                 await MainActor.run {
-                    let _ = self.localServers.append(response.asServerState)
+                    if let serverState = response.asServerState {
+                        let _ = self.localServers.append(serverState)
+                    }
                 }
             }
         }
@@ -78,9 +80,14 @@ final class ConnectToServerViewModel: ViewModel {
         let formattedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: .objectReplacement)
             .trimmingCharacters(in: ["/"])
-            .prepending("http://", if: !url.contains("://"))
+            .prepending("https://", if: !url.contains("://"))
 
         guard let url = URL(string: formattedURL) else { throw ErrorMessage("Invalid URL") }
+
+        // Log warning for non-HTTPS connections
+        if url.scheme == "http" {
+            logger.warning("Connecting to server over insecure HTTP connection: \(url.host ?? "unknown")")
+        }
 
         let client = JellyfinClient(
             configuration: .swiftfinConfiguration(url: url),

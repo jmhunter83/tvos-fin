@@ -10,6 +10,7 @@ import CoreStore
 import Factory
 import Foundation
 import KeychainSwift
+import Logging
 
 extension SwiftfinStore {
     enum Mappings {}
@@ -34,9 +35,15 @@ extension SwiftfinStore.Mappings {
 
                         // move access token to Keychain
                         if let id = sourceObject["id"] as? String, let accessToken = sourceObject["accessToken"] as? String {
-                            Container.shared.keychainService().set(accessToken, forKey: "\(id)-accessToken")
+                            Container.shared.keychainService().set(
+                                accessToken,
+                                forKey: "\(id)-accessToken",
+                                withAccess: .accessibleWhenUnlockedThisDeviceOnly
+                            )
                         } else {
-                            fatalError("wtf")
+                            // User data corrupted - they will need to re-authenticate
+                            let logger = Logger.swiftfin()
+                            logger.error("V1→V2 migration: Missing id or accessToken for user. User will need to re-authenticate.")
                         }
 
                         let destinationObject = createDestinationObject()

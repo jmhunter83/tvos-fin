@@ -113,7 +113,10 @@ extension StoredValue {
                 publisher.addObserver(self) { [weak self] objectPublisher in
                     guard self?.shouldListenToPublish ?? false else { return }
                     guard let data = objectPublisher.object?.data else { return }
-                    guard let newValue = try? JSONDecoder().decode(Value.self, from: data) else { fatalError() }
+                    guard let newValue = try? JSONDecoder().decode(Value.self, from: data) else {
+                        self?.logger.error("Failed to decode StoredValue for key: \(self?.key.name ?? "unknown") - skipping update")
+                        return
+                    }
 
                     DispatchQueue.main.async {
                         self?.value = newValue

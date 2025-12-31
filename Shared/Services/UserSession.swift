@@ -10,6 +10,7 @@ import CoreStore
 import Defaults
 import Factory
 import JellyfinAPI
+import Logging
 import Pulse
 
 final class UserSession {
@@ -60,12 +61,23 @@ extension Container {
             guard let server = user.server,
                   let _ = SwiftfinStore.dataStack.fetchExisting(server)
             else {
-                fatalError("No associated server for last user")
+                // Orphaned user - sign out gracefully
+                let logger = Logger.swiftfin()
+                logger.error("No associated server for user \(userId). Signing out.")
+                Defaults[.lastSignedInUserID] = .signedOut
+                return nil
+            }
+
+            guard let userState = user.state else {
+                let logger = Logger.swiftfin()
+                logger.error("User \(userId) has no valid state. Signing out.")
+                Defaults[.lastSignedInUserID] = .signedOut
+                return nil
             }
 
             return .init(
                 server: server.state,
-                user: user.state
+                user: userState
             )
         }.cached
     }

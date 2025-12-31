@@ -11,7 +11,7 @@ import UIKit
 extension UIDevice {
 
     static var vendorUUIDString: String {
-        current.identifierForVendor!.uuidString
+        current.identifierForVendor?.uuidString ?? UUID().uuidString
     }
 
     static var isPad: Bool {

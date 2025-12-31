@@ -69,7 +69,7 @@ final class SelectUserViewModel: ViewModel {
         }
 
         return storedServer.users
-            .map(\.state)
+            .compactMap(\.state)
     }
 
     @Function(\Action.Cases.signIn)

@@ -28,7 +28,7 @@ final class ServerConnectionViewModel: ViewModel {
             return
         }
 
-        let userStates = storedServer.users.map(\.state)
+        let userStates = storedServer.users.compactMap(\.state)
 
         // Note: don't use Server/UserState.delete() to have
         //       all deletions in a single transaction
