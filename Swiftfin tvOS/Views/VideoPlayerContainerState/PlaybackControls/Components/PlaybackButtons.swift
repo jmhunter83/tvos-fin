@@ -74,7 +74,7 @@ extension VideoPlayer.PlaybackControls {
                 radius: focusedButton == .playPause ? 25 : 0,
                 y: focusedButton == .playPause ? 20 : 0
             )
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: focusedButton)
+            .animation(.linear(duration: 0.15), value: focusedButton)
         }
 
         // MARK: - Jump Backward Button
@@ -99,7 +99,7 @@ extension VideoPlayer.PlaybackControls {
                 radius: focusedButton == .jumpBackward ? 20 : 0,
                 y: focusedButton == .jumpBackward ? 15 : 0
             )
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: focusedButton)
+            .animation(.linear(duration: 0.15), value: focusedButton)
         }
 
         // MARK: - Jump Forward Button
@@ -124,7 +124,7 @@ extension VideoPlayer.PlaybackControls {
                 radius: focusedButton == .jumpForward ? 20 : 0,
                 y: focusedButton == .jumpForward ? 15 : 0
             )
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: focusedButton)
+            .animation(.linear(duration: 0.15), value: focusedButton)
         }
 
         // MARK: - Button Background

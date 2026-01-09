@@ -6,6 +6,7 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import JellyfinAPI
 import SwiftUI
 
@@ -24,6 +25,14 @@ class MediaPlayerItem: ViewModel, MediaPlayerObserver {
         didSet {
             if let proxy = manager?.proxy as? any VideoMediaPlayerProxy {
                 proxy.setAudioStream(.init(index: selectedAudioStreamIndex))
+            }
+
+            // Persist the selected language as the user's preference
+            if let index = selectedAudioStreamIndex,
+               let selectedStream = audioStreams.first(where: { $0.index == index }),
+               let language = selectedStream.language
+            {
+                Defaults[.VideoPlayer.Audio.preferredLanguage] = language
             }
         }
     }
@@ -94,7 +103,14 @@ class MediaPlayerItem: ViewModel, MediaPlayerObserver {
 
         super.init()
 
-        selectedAudioStreamIndex = mediaSource.defaultAudioStreamIndex ?? -1
+        // Select audio stream based on user's preferred language, falling back to server default
+        let preferredLanguage = Defaults[.VideoPlayer.Audio.preferredLanguage]
+        if let preferredStream = audioStreams.first(where: { $0.language?.lowercased() == preferredLanguage.lowercased() }) {
+            selectedAudioStreamIndex = preferredStream.index ?? mediaSource.defaultAudioStreamIndex ?? -1
+        } else {
+            selectedAudioStreamIndex = mediaSource.defaultAudioStreamIndex ?? -1
+        }
+
         selectedSubtitleStreamIndex = mediaSource.defaultSubtitleStreamIndex ?? -1
 
         observers.append(MediaProgressObserver(item: self))

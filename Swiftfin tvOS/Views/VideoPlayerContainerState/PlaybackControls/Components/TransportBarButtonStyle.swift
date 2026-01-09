@@ -50,8 +50,8 @@ struct TransportBarButton<Label: View>: View {
             x: 0,
             y: isFocused ? 15 : 0
         )
-        // Apple's spring animation curve
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFocused)
+        // Use linear animation to reduce main thread load (prevents audio crackling)
+        .animation(.linear(duration: 0.15), value: isFocused)
     }
 
     @ViewBuilder
@@ -102,6 +102,7 @@ struct TransportBarMenu<Label: View, Content: View>: View {
                     backgroundView
                 }
         }
+        .menuStyle(.borderlessButton)
         .focused($isFocused)
         .scaleEffect(isFocused ? 1.1 : 1.0)
         .shadow(
@@ -110,7 +111,8 @@ struct TransportBarMenu<Label: View, Content: View>: View {
             x: 0,
             y: isFocused ? 15 : 0
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFocused)
+        // Use linear animation to reduce main thread load (prevents audio crackling)
+        .animation(.linear(duration: 0.15), value: isFocused)
     }
 
     @ViewBuilder

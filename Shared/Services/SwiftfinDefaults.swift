@@ -237,6 +237,11 @@ extension Defaults.Keys {
             static let subtitleSize: Key<Int> = UserKey("subtitleSize", default: 9)
         }
 
+        enum Audio {
+            /// Preferred audio language code (ISO 639-2, e.g., "eng", "spa", "jpn")
+            static let preferredLanguage: Key<String> = UserKey("preferredAudioLanguage", default: "eng")
+        }
+
         enum Transition {
             static let pauseOnBackground: Key<Bool> = UserKey("playInBackground", default: true)
         }

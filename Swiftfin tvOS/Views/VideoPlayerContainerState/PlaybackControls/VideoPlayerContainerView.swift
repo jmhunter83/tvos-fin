@@ -198,6 +198,9 @@ extension VideoPlayer {
 
         override func viewDidDisappear(_ animated: Bool) {
             super.viewDidDisappear(animated)
+            // Stop proxy immediately for instant audio cutoff
+            manager.proxy?.stop()
+            // Then clean up manager state
             manager.stop()
         }
 

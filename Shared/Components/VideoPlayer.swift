@@ -59,6 +59,12 @@ struct VideoPlayer: View {
             manager.proxy = proxy
             manager.start()
         }
+        .onDisappear {
+            // Stop proxy immediately for instant audio cutoff
+            proxy.stop()
+            // Then clean up manager state
+            manager.stop()
+        }
     }
 
     var body: some View {
