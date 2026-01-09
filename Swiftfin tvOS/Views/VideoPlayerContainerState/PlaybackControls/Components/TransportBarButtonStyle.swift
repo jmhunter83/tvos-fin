@@ -102,7 +102,6 @@ struct TransportBarMenu<Label: View, Content: View>: View {
                     backgroundView
                 }
         }
-        .menuStyle(.borderlessButton)
         .focused($isFocused)
         .scaleEffect(isFocused ? 1.1 : 1.0)
         .shadow(

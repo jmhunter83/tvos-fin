@@ -79,7 +79,7 @@ extension VideoPlayer {
         private var centerPlaybackButtons: some View {
             if !isPresentingSupplement && !isScrubbing {
                 PlaybackButtons()
-                    .focusGuide(focusGuide, tag: "playbackButtons")
+                    .focusGuide(focusGuide, tag: "playbackButtons", bottom: "actionButtons")
                     .isVisible(isPresentingOverlay)
             }
         }
@@ -95,11 +95,11 @@ extension VideoPlayer {
                         NavigationBar.ActionButtons()
                             .focusSection()
                     }
-                    .focusGuide(focusGuide, tag: "actionButtons")
+                    .focusGuide(focusGuide, tag: "actionButtons", top: "playbackButtons", bottom: "playbackProgress")
 
                     // Progress bar with time labels
                     PlaybackProgress()
-                        .focusGuide(focusGuide, tag: "playbackProgress")
+                        .focusGuide(focusGuide, tag: "playbackProgress", top: "actionButtons")
                 }
                 .padding(.horizontal, 60)
                 .padding(.vertical, 30)
