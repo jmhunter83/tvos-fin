@@ -3,65 +3,173 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import SwiftUI
 
-/// Button style for transport bar action buttons
-/// Uses Liquid Glass on tvOS 26+, materials on tvOS 18+, with press feedback
-struct TransportBarButtonStyle: ButtonStyle {
+// MARK: - Native tvOS Focus Button
 
-    func makeBody(configuration: Configuration) -> some View {
-        #if os(tvOS)
-        if #available(tvOS 26.0, *) {
-            // tvOS 26+ Liquid Glass buttons
-            configuration.label
+/// A button wrapper that provides native Apple TV focus behavior
+/// with the signature "lift and glow" effect
+struct TransportBarButton<Label: View>: View {
+
+    @FocusState
+    private var isFocused: Bool
+
+    let action: () -> Void
+    let label: () -> Label
+
+    init(
+        action: @escaping () -> Void,
+        @ViewBuilder label: @escaping () -> Label
+    ) {
+        self.action = action
+        self.label = label
+    }
+
+    var body: some View {
+        Button(action: action) {
+            label()
                 .font(.title3)
                 .fontWeight(.medium)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .glassEffect(
-                    configuration.isPressed ? .regular.interactive() : .regular,
-                    in: .capsule
-                )
-                .scaleEffect(configuration.isPressed ? 1.1 : 1.0)
-                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
-        } else {
-            legacyButton(configuration: configuration)
+                .foregroundStyle(isFocused ? .black : .white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background {
+                    backgroundView
+                }
         }
-        #else
-        legacyButton(configuration: configuration)
-        #endif
+        .buttonStyle(.plain)
+        .focused($isFocused)
+        // Native Apple TV focus effect: lift + shadow
+        .scaleEffect(isFocused ? 1.1 : 1.0)
+        .shadow(
+            color: isFocused ? .black.opacity(0.3) : .clear,
+            radius: isFocused ? 20 : 0,
+            x: 0,
+            y: isFocused ? 15 : 0
+        )
+        // Apple's spring animation curve
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFocused)
     }
 
     @ViewBuilder
-    private func legacyButton(configuration: Configuration) -> some View {
+    private var backgroundView: some View {
+        if #available(tvOS 26.0, *) {
+            // Liquid Glass on tvOS 26+
+            Capsule()
+                .fill(isFocused ? Color.white : Color.white.opacity(0.001))
+                .glassEffect(.regular, in: .capsule)
+        } else if #available(tvOS 18.0, *) {
+            // Material on tvOS 18+
+            if isFocused {
+                Capsule().fill(Color.white)
+            } else {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+            }
+        } else {
+            // Fallback
+            Capsule()
+                .fill(isFocused ? Color.white : Color.white.opacity(0.3))
+        }
+    }
+}
+
+// MARK: - Transport Bar Menu Button
+
+/// A menu wrapper with native focus behavior
+struct TransportBarMenu<Label: View, Content: View>: View {
+
+    @FocusState
+    private var isFocused: Bool
+
+    let title: String
+    let label: () -> Label
+    let content: () -> Content
+
+    init(
+        _ title: String,
+        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.label = label
+        self.content = content
+    }
+
+    var body: some View {
+        Menu {
+            content()
+        } label: {
+            label()
+                .font(.title3)
+                .fontWeight(.medium)
+                .foregroundStyle(isFocused ? .black : .white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background {
+                    backgroundView
+                }
+        }
+        .focused($isFocused)
+        .scaleEffect(isFocused ? 1.1 : 1.0)
+        .shadow(
+            color: isFocused ? .black.opacity(0.3) : .clear,
+            radius: isFocused ? 20 : 0,
+            x: 0,
+            y: isFocused ? 15 : 0
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFocused)
+    }
+
+    @ViewBuilder
+    private var backgroundView: some View {
+        if #available(tvOS 26.0, *) {
+            Capsule()
+                .fill(isFocused ? Color.white : Color.white.opacity(0.001))
+                .glassEffect(.regular, in: .capsule)
+        } else if #available(tvOS 18.0, *) {
+            if isFocused {
+                Capsule().fill(Color.white)
+            } else {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+            }
+        } else {
+            Capsule()
+                .fill(isFocused ? Color.white : Color.white.opacity(0.3))
+        }
+    }
+}
+
+// MARK: - Legacy ButtonStyle (kept for compatibility)
+
+/// Button style for transport bar action buttons
+/// Note: Prefer TransportBarButton for proper focus handling
+struct TransportBarButtonStyle: ButtonStyle {
+
+    func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.title3)
+            .fontWeight(.medium)
             .foregroundStyle(.white)
-            .padding(12)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
             .background {
-                #if os(tvOS)
                 if #available(tvOS 18.0, *) {
                     Capsule()
                         .fill(.ultraThinMaterial)
-                        .opacity(configuration.isPressed ? 1.0 : 0.6)
-                        .overlay {
-                            Capsule()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        }
+                        .opacity(configuration.isPressed ? 1.0 : 0.8)
                 } else {
                     Capsule()
-                        .fill(.white.opacity(configuration.isPressed ? 0.5 : 0.2))
+                        .fill(.white.opacity(configuration.isPressed ? 0.5 : 0.3))
                 }
-                #else
-                Capsule()
-                    .fill(.white.opacity(configuration.isPressed ? 0.5 : 0.2))
-                #endif
             }
-            .scaleEffect(configuration.isPressed ? 1.15 : 1.0)
+            .scaleEffect(configuration.isPressed ? 1.05 : 1.0)
             .animation(.spring(response: 0.2), value: configuration.isPressed)
     }
 }

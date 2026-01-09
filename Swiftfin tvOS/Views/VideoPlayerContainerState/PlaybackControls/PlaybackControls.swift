@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Defaults
@@ -113,13 +113,23 @@ extension VideoPlayer {
                         transportBar
                             .padding(.horizontal, 40)
                             .padding(.bottom, 60)
-                            .isVisible(isScrubbing || isPresentingOverlay)
+                            .opacity(isScrubbing || isPresentingOverlay ? 1 : 0)
+                            .disabled(!(isScrubbing || isPresentingOverlay))
                     }
                 }
             }
             .animation(.linear(duration: 0.1), value: isScrubbing)
             .animation(.bouncy(duration: 0.4), value: isPresentingSupplement)
             .animation(.bouncy(duration: 0.25), value: isPresentingOverlay)
+            .onChange(of: isPresentingOverlay) { _, isPresenting in
+                if isPresenting {
+                    // Transition focus to playback progress when overlay appears
+                    // Use longer delay to ensure view layout is complete
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        focusGuide.transition(to: "playbackProgress")
+                    }
+                }
+            }
             .onReceive(onPressEvent) { press in
                 switch press {
                 case (.playPause, _):

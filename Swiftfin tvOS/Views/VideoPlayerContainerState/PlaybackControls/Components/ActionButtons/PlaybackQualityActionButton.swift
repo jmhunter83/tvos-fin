@@ -6,34 +6,33 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import Defaults
 import SwiftUI
 
 extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
-    struct PlaybackSpeed: View {
+    struct PlaybackQuality: View {
 
         @Environment(\.isInMenu)
         private var isInMenu
 
-        @EnvironmentObject
-        private var manager: MediaPlayerManager
+        @Default(.VideoPlayer.Playback.appMaximumBitrate)
+        private var currentBitrate
 
-        private let presetRates: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-
-        private func isCurrentRate(_ rate: Float) -> Bool {
-            abs(manager.rate - rate) < 0.01
+        private func isCurrentBitrate(_ bitrate: PlaybackBitrate) -> Bool {
+            currentBitrate == bitrate
         }
 
         @ViewBuilder
         private var content: some View {
-            ForEach(presetRates, id: \.self) { rate in
+            ForEach(PlaybackBitrate.allCases, id: \.self) { bitrate in
                 Button {
-                    manager.setRate(rate: rate)
+                    currentBitrate = bitrate
                 } label: {
-                    if isCurrentRate(rate) {
-                        Label(rate.formatted(.playbackRate), systemImage: "checkmark")
+                    if isCurrentBitrate(bitrate) {
+                        Label(bitrate.displayTitle, systemImage: "checkmark")
                     } else {
-                        Text(rate.formatted(.playbackRate))
+                        Text(bitrate.displayTitle)
                     }
                 }
             }
@@ -43,17 +42,17 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
             if isInMenu {
                 // Inside overflow menu - use standard Menu
                 Menu(
-                    L10n.playbackSpeed,
-                    systemImage: "speedometer"
+                    L10n.playbackQuality,
+                    systemImage: "tv.circle"
                 ) {
                     content
                 }
             } else {
                 // In bar - use native focus wrapper
-                TransportBarMenu(L10n.playbackSpeed) {
-                    Image(systemName: "speedometer")
+                TransportBarMenu(L10n.playbackQuality) {
+                    Image(systemName: "tv.circle")
                 } content: {
-                    Section(L10n.playbackSpeed) {
+                    Section(L10n.playbackQuality) {
                         content
                     }
                 }

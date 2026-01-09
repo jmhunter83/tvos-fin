@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import SwiftUI
@@ -11,6 +11,9 @@ import SwiftUI
 extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct AspectFill: View {
+
+        @Environment(\.isInMenu)
+        private var isInMenu
 
         @EnvironmentObject
         private var containerState: VideoPlayerContainerState
@@ -29,14 +32,22 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
         }
 
         var body: some View {
-            Button(
-                L10n.aspectFill,
-                systemImage: systemImage
-            ) {
-                isAspectFilled.toggle()
+            if isInMenu {
+                // Inside overflow menu - use standard Button
+                Button(
+                    L10n.aspectFill,
+                    systemImage: systemImage
+                ) {
+                    isAspectFilled.toggle()
+                }
+            } else {
+                // In bar - use native focus wrapper
+                TransportBarButton {
+                    isAspectFilled.toggle()
+                } label: {
+                    Image(systemName: systemImage)
+                }
             }
-//            .videoPlayerActionButtonTransition()
-//            .id(isAspectFilled)
         }
     }
 }

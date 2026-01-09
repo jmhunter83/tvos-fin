@@ -3,10 +3,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Defaults
+import Logging
 import SwiftUI
 
 extension VideoPlayer.PlaybackControls.NavigationBar {
@@ -23,10 +24,21 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
         @EnvironmentObject
         private var manager: MediaPlayerManager
 
+        private let logger = Logger.swiftfin()
+
         private func filteredActionButtons(_ rawButtons: [VideoPlayerActionButton]) -> [VideoPlayerActionButton] {
             var filteredButtons = rawButtons
 
+            // DEBUG: Log audio stream state
+            let audioCount = manager.playbackItem?.audioStreams.count ?? -1
+            let subtitleCount = manager.playbackItem?.subtitleStreams.count ?? -1
+            let isLive = manager.item.isLiveStream
+            logger.debug(
+                "ActionButtons: audio=\(audioCount), subs=\(subtitleCount), live=\(isLive)"
+            )
+
             if manager.playbackItem?.audioStreams.isEmpty == true {
+                logger.debug("Filtering out audio - no streams")
                 filteredButtons.removeAll { $0 == .audio }
             }
 
@@ -44,7 +56,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                 filteredButtons.removeAll { $0 == .audio }
                 filteredButtons.removeAll { $0 == .autoPlay }
                 filteredButtons.removeAll { $0 == .playbackSpeed }
-//                filteredButtons.removeAll { $0 == .playbackQuality }
+                filteredButtons.removeAll { $0 == .playbackQuality }
                 filteredButtons.removeAll { $0 == .subtitles }
             }
 
@@ -73,26 +85,14 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
 //                GestureLock()
             case .playbackSpeed:
                 PlaybackSpeed()
-//            case .playbackQuality:
-//                PlaybackQuality()
+            case .playbackQuality:
+                PlaybackQuality()
             case .playNextItem:
                 PlayNextItem()
             case .playPreviousItem:
                 PlayPreviousItem()
             case .subtitles:
                 Subtitles()
-            }
-        }
-
-        @ViewBuilder
-        private var menuButtons: some View {
-            Menu(
-                "Menu",
-                systemImage: "ellipsis.circle"
-            ) {
-                ForEach(menuActionButtons) { actionButton in
-                    view(for: actionButton)
-                }
             }
         }
 
@@ -104,10 +104,9 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                 )
 
                 if menuActionButtons.isNotEmpty {
-                    Menu(
-                        L10n.menu,
-                        systemImage: "ellipsis.circle"
-                    ) {
+                    TransportBarMenu(L10n.menu) {
+                        Image(systemName: "ellipsis.circle")
+                    } content: {
                         ForEach(
                             menuActionButtons,
                             content: view(for:)
@@ -116,10 +115,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                     }
                 }
             }
-            .menuStyle(.button)
             .labelStyle(.iconOnly)
-            .buttonBorderShape(.circle)
-            .buttonStyle(TransportBarButtonStyle())
         }
     }
 }

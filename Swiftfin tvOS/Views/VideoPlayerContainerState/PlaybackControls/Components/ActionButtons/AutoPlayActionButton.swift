@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Defaults
@@ -31,27 +31,28 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
         }
 
         var body: some View {
-            Button {
-                isAutoPlayEnabled.toggle()
+            if isInMenu {
+                // Inside overflow menu - use standard Button
+                Button {
+                    isAutoPlayEnabled.toggle()
+                } label: {
+                    Label(
+                        L10n.autoPlay,
+                        systemImage: systemImage
+                    )
 
-//                if isAutoPlayEnabled {
-//                    toastProxy.present("Auto Play enabled", systemName: "play.circle.fill")
-//                } else {
-//                    toastProxy.present("Auto Play disabled", systemName: "stop.circle")
-//                }
-            } label: {
-                Label(
-                    L10n.autoPlay,
-                    systemImage: systemImage
-                )
-
-                if isInMenu {
                     Text(isAutoPlayEnabled ? "On" : "Off")
                 }
+                .disabled(manager.queue == nil)
+            } else {
+                // In bar - use native focus wrapper
+                TransportBarButton {
+                    isAutoPlayEnabled.toggle()
+                } label: {
+                    Image(systemName: systemImage)
+                }
+                .disabled(manager.queue == nil)
             }
-            .videoPlayerActionButtonTransition()
-            .id(isAutoPlayEnabled)
-            .disabled(manager.queue == nil)
         }
     }
 }

@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Combine
@@ -126,6 +126,15 @@ extension VideoPlayer {
 
         private var cancellables: Set<AnyCancellable> = []
 
+        // MARK: - Focus Management
+
+        override var preferredFocusEnvironments: [UIFocusEnvironment] {
+            if containerState.isPresentingOverlay || containerState.isPresentingSupplement {
+                return [playbackControlsViewController]
+            }
+            return []
+        }
+
         init(
             containerState: VideoPlayerContainerState,
             manager: MediaPlayerManager,
@@ -180,10 +189,40 @@ extension VideoPlayer {
 
             setupViews()
             setupConstraints()
+            setupFocusObserver()
 
             let gesture = UITapGestureRecognizer(target: self, action: #selector(ignorePress))
             gesture.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
             view.addGestureRecognizer(gesture)
+        }
+
+        private func setupFocusObserver() {
+            containerState.$overlayState
+                .removeDuplicates()
+                .sink { [weak self] (state: OverlayVisibility) in
+                    guard let self else { return }
+                    // Delay focus update to allow views to layout
+                    if state == .visible {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            self.setNeedsFocusUpdate()
+                            self.updateFocusIfNeeded()
+                        }
+                    }
+                }
+                .store(in: &cancellables)
+
+            containerState.$supplementState
+                .removeDuplicates()
+                .sink { [weak self] (state: SupplementVisibility) in
+                    guard let self else { return }
+                    if state == .open {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            self.setNeedsFocusUpdate()
+                            self.updateFocusIfNeeded()
+                        }
+                    }
+                }
+                .store(in: &cancellables)
         }
 
         private func setupViews() {
@@ -191,11 +230,15 @@ extension VideoPlayer {
             view.addSubview(playerView)
             playerViewController.didMove(toParent: self)
             playerView.backgroundColor = .black
+            // Prevent player view from participating in focus
+            playerView.isUserInteractionEnabled = false
 
             addChild(playbackControlsViewController)
             view.addSubview(playbackControlsView)
             playbackControlsViewController.didMove(toParent: self)
             playbackControlsView.backgroundColor = .clear
+            // Ensure controls can receive focus
+            playbackControlsView.isUserInteractionEnabled = true
 
             addChild(supplementContainerViewController)
             view.addSubview(supplementContainerView)
@@ -217,7 +260,11 @@ extension VideoPlayer {
                 equalTo: view.bottomAnchor,
                 constant: -(100 + EdgeInsets.edgePadding)
             )
-            containerState.supplementOffset = supplementBottomAnchor.constant
+            // Defer to avoid "Publishing changes from within view updates" warning
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.containerState.supplementOffset = self.supplementBottomAnchor.constant
+            }
 
             let constant = (500 + EdgeInsets.edgePadding * 2)
             supplementHeightAnchor = supplementContainerView.heightAnchor.constraint(equalToConstant: constant)
@@ -245,10 +292,16 @@ extension VideoPlayer {
         func ignorePress() {}
 
         override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-            print(presses)
-            guard let buttonPress = presses.first else { return }
+            guard let buttonPress = presses.first else {
+                super.pressesBegan(presses, with: event)
+                return
+            }
 
+            // Send event to SwiftUI for overlay toggle handling
             onPressEvent.send((type: buttonPress.type, phase: buttonPress.phase))
+
+            // Call super to allow UIKit focus navigation to work
+            super.pressesBegan(presses, with: event)
         }
     }
 }

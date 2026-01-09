@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import SwiftUI
@@ -60,23 +60,26 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
         var body: some View {
             if let playbackItem = manager.playbackItem {
-                Menu(
-                    L10n.subtitles,
-                    systemImage: systemImage
-                ) {
-                    if isInMenu {
+                if isInMenu {
+                    // Inside overflow menu - use standard Menu
+                    Menu(
+                        L10n.subtitles,
+                        systemImage: systemImage
+                    ) {
                         content(playbackItem: playbackItem)
-                    } else {
+                    }
+                    .assign(playbackItem.$selectedSubtitleStreamIndex, to: $selectedSubtitleStreamIndex)
+                } else {
+                    // In bar - use native focus wrapper
+                    TransportBarMenu(L10n.subtitles) {
+                        Image(systemName: systemImage)
+                    } content: {
                         Section(L10n.subtitles) {
                             content(playbackItem: playbackItem)
                         }
                     }
+                    .assign(playbackItem.$selectedSubtitleStreamIndex, to: $selectedSubtitleStreamIndex)
                 }
-                #if os(tvOS)
-                .menuStyle(.automatic)
-                #endif
-                .videoPlayerActionButtonTransition()
-                .assign(playbackItem.$selectedSubtitleStreamIndex, to: $selectedSubtitleStreamIndex)
             }
         }
     }
