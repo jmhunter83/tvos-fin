@@ -3,139 +3,61 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Combine
 import Foundation
 import SwiftUI
 
-// MARK: - State Enums (Phase 3.1)
+// MARK: - State Enums
 
 /// Overlay visibility state
-enum OverlayVisibility {
+enum OverlayVisibility: Hashable {
     case hidden
     case visible
     case locked // gestures locked, overlay hidden
 }
 
 /// Supplement panel state
-enum SupplementVisibility {
+enum SupplementVisibility: Hashable {
     case closed
     case open
 }
 
 /// Scrubbing state
-enum ScrubState {
+enum ScrubState: Hashable {
     case idle
     case scrubbing
 }
 
-// TODO: turned into spaghetti to get out, clean up with a better state system
-// TODO: verify timer states
-
 @MainActor
 class VideoPlayerContainerState: ObservableObject {
 
-    // MARK: - New enum-based state (Phase 3.1 - coexists with booleans during migration)
+    // MARK: - Primary State (enum-based)
 
     @Published
-    var overlayState: OverlayVisibility = .hidden
-
-    @Published
-    var supplementState: SupplementVisibility = .closed
-
-    @Published
-    var scrubState: ScrubState = .idle
-
-    // MARK: - Legacy boolean state (will be deprecated after migration)
-
-    @Published
-    var isAspectFilled: Bool = false
-
-    @Published
-    var isGestureLocked: Bool = false {
+    private(set) var overlayState: OverlayVisibility = .hidden {
         didSet {
-            if isGestureLocked {
-                isPresentingOverlay = false
-                overlayState = .locked
-            } else if !isPresentingOverlay {
-                overlayState = .hidden
-            }
-        }
-    }
+            updatePlaybackControlsVisibility()
 
-    // TODO: rename isPresentingPlaybackButtons
-    @Published
-    var isPresentingPlaybackControls: Bool = false
-
-    // TODO: replace with graph dependency package
-    func setPlaybackControlsVisibility() {
-
-        guard isPresentingOverlay else {
-            isPresentingPlaybackControls = false
-            return
-        }
-
-        if isPresentingOverlay && !isPresentingSupplement {
-            isPresentingPlaybackControls = true
-            return
-        }
-
-        if isCompact {
-            if isPresentingSupplement {
-                if !isPresentingPlaybackControls {
-                    isPresentingPlaybackControls = true
-                }
-            } else {
-                isPresentingPlaybackControls = false
-            }
-        } else {
-            isPresentingPlaybackControls = false
-        }
-    }
-
-    @Published
-    var isCompact: Bool = false {
-        didSet {
-            setPlaybackControlsVisibility()
-        }
-    }
-
-    @Published
-    var isGuestSupplement: Bool = false
-
-    // TODO: rename isPresentingPlaybackControls
-    @Published
-    var isPresentingOverlay: Bool = false {
-        didSet {
-            setPlaybackControlsVisibility()
-
-            // Sync enum state (Phase 3.1)
-            if isGestureLocked {
-                overlayState = .locked
-            } else {
-                overlayState = isPresentingOverlay ? .visible : .hidden
-            }
-
-            if isPresentingOverlay, !isPresentingSupplement {
+            // When overlay becomes visible (not locked), start auto-hide timer
+            if overlayState == .visible, supplementState == .closed {
                 timer.poke()
             }
         }
     }
 
     @Published
-    private(set) var isPresentingSupplement: Bool = false {
+    private(set) var supplementState: SupplementVisibility = .closed {
         didSet {
-            setPlaybackControlsVisibility()
-            presentationControllerShouldDismiss = !isPresentingSupplement
+            updatePlaybackControlsVisibility()
+            presentationControllerShouldDismiss = supplementState == .closed
 
-            // Sync enum state (Phase 3.1)
-            supplementState = isPresentingSupplement ? .open : .closed
-
-            if isPresentingSupplement {
+            switch supplementState {
+            case .open:
                 timer.stop()
-            } else {
+            case .closed:
                 isGuestSupplement = false
                 timer.poke()
             }
@@ -143,18 +65,73 @@ class VideoPlayerContainerState: ObservableObject {
     }
 
     @Published
-    var isScrubbing: Bool = false {
+    private(set) var scrubState: ScrubState = .idle {
         didSet {
-            // Sync enum state (Phase 3.1)
-            scrubState = isScrubbing ? .scrubbing : .idle
-
-            if isScrubbing {
+            switch scrubState {
+            case .scrubbing:
                 timer.stop()
-            } else {
+            case .idle:
                 timer.poke()
             }
         }
     }
+
+    // MARK: - Computed Properties (backward compatibility)
+
+    /// Whether the overlay is currently visible (not hidden or locked)
+    var isPresentingOverlay: Bool {
+        get { overlayState == .visible }
+        set {
+            if isGestureLocked {
+                // When locked, ignore attempts to show overlay
+                overlayState = .locked
+            } else {
+                overlayState = newValue ? .visible : .hidden
+            }
+        }
+    }
+
+    /// Whether the supplement panel is currently open
+    var isPresentingSupplement: Bool {
+        supplementState == .open
+    }
+
+    /// Whether the user is currently scrubbing the timeline
+    var isScrubbing: Bool {
+        get { scrubState == .scrubbing }
+        set { scrubState = newValue ? .scrubbing : .idle }
+    }
+
+    /// Whether gestures are locked (overlay is hidden and cannot be shown)
+    var isGestureLocked: Bool {
+        get { overlayState == .locked }
+        set {
+            if newValue {
+                overlayState = .locked
+            } else {
+                // When unlocking, go to hidden state
+                overlayState = .hidden
+            }
+        }
+    }
+
+    // MARK: - Other Published State
+
+    @Published
+    var isAspectFilled: Bool = false
+
+    @Published
+    var isPresentingPlaybackControls: Bool = false
+
+    @Published
+    var isCompact: Bool = false {
+        didSet {
+            updatePlaybackControlsVisibility()
+        }
+    }
+
+    @Published
+    var isGuestSupplement: Bool = false
 
     @Published
     var presentationControllerShouldDismiss: Bool = true
@@ -162,7 +139,7 @@ class VideoPlayerContainerState: ObservableObject {
     @Published
     var selectedSupplement: (any MediaPlayerSupplement)? = nil {
         didSet {
-            isPresentingSupplement = selectedSupplement != nil
+            supplementState = selectedSupplement != nil ? .open : .closed
         }
     }
 
@@ -171,6 +148,8 @@ class VideoPlayerContainerState: ObservableObject {
 
     @Published
     var centerOffset: CGFloat = 0.0
+
+    // MARK: - Components
 
     let jumpProgressObserver: JumpProgressObserver = .init()
     let scrubbedSeconds: PublishedBox<Duration> = .init(initialValue: .zero)
@@ -189,13 +168,18 @@ class VideoPlayerContainerState: ObservableObject {
     private var jumpProgressCancellable: AnyCancellable?
     private var timerCancellable: AnyCancellable?
 
+    // MARK: - Initialization
+
     init() {
         timerCancellable = timer.sink { [weak self] in
             guard let self else { return }
-            guard !isScrubbing, !isPresentingSupplement, manager?.playbackRequestStatus != .paused else { return }
+            guard scrubState == .idle,
+                  supplementState == .closed,
+                  manager?.playbackRequestStatus != .paused
+            else { return }
 
             withAnimation(.linear(duration: 0.25)) {
-                self.isPresentingOverlay = false
+                self.overlayState = .hidden
             }
         }
 
@@ -208,6 +192,27 @@ class VideoPlayerContainerState: ObservableObject {
         #endif
     }
 
+    // MARK: - State Mutations
+
+    /// Show or hide the overlay with animation consideration
+    func setOverlayVisible(_ visible: Bool, animated: Bool = true) {
+        guard !isGestureLocked else { return }
+
+        if animated {
+            withAnimation(.linear(duration: 0.25)) {
+                overlayState = visible ? .visible : .hidden
+            }
+        } else {
+            overlayState = visible ? .visible : .hidden
+        }
+    }
+
+    /// Toggle overlay visibility
+    func toggleOverlay() {
+        setOverlayVisible(overlayState != .visible)
+    }
+
+    /// Select a supplement panel to display
     func select(supplement: (any MediaPlayerSupplement)?, isGuest: Bool = false) {
         isGuestSupplement = isGuest
 
@@ -217,6 +222,32 @@ class VideoPlayerContainerState: ObservableObject {
         } else {
             selectedSupplement = supplement
             containerView?.presentSupplementContainer(supplement != nil)
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func updatePlaybackControlsVisibility() {
+        guard overlayState == .visible else {
+            isPresentingPlaybackControls = false
+            return
+        }
+
+        if overlayState == .visible && supplementState == .closed {
+            isPresentingPlaybackControls = true
+            return
+        }
+
+        if isCompact {
+            if supplementState == .open {
+                if !isPresentingPlaybackControls {
+                    isPresentingPlaybackControls = true
+                }
+            } else {
+                isPresentingPlaybackControls = false
+            }
+        } else {
+            isPresentingPlaybackControls = false
         }
     }
 }

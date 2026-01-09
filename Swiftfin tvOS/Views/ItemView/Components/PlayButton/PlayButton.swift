@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import JellyfinAPI
@@ -71,15 +71,25 @@ extension ItemView {
             return sourceLabel
         }
 
+        // MARK: - Has Progress
+
+        private var hasProgress: Bool {
+            (viewModel.playButtonItem?.userData?.playbackPositionTicks ?? 0) > 0
+        }
+
         // MARK: - Body
 
         var body: some View {
-            HStack(spacing: 30) {
+            HStack(spacing: 50) {
                 playButton
 
                 if multipleVersions {
                     VersionMenu(viewModel: viewModel, mediaSources: mediaSources)
                         .frame(width: 100, height: 100)
+                }
+
+                if hasProgress {
+                    startFromBeginningButton
                 }
             }
             .fontWeight(.semibold)
@@ -123,6 +133,31 @@ extension ItemView {
                 }
             }
             .isSelected(true)
+            .enabled(isEnabled)
+        }
+
+        // MARK: - Start from Beginning Button
+
+        private var startFromBeginningButton: some View {
+            Button {
+                play(fromBeginning: true)
+            } label: {
+                HStack(spacing: 15) {
+                    Image(systemName: "gobackward")
+                        .font(.title3)
+
+                    Text(L10n.playFromBeginning)
+                        .font(.headline)
+                }
+                .padding(.horizontal, 25)
+                .padding(.vertical, 10)
+            }
+            .buttonStyle(
+                .tintedMaterial(
+                    tint: .secondary,
+                    foregroundColor: .white
+                )
+            )
             .enabled(isEnabled)
         }
 

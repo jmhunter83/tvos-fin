@@ -56,24 +56,12 @@ struct TransportBarButton<Label: View>: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        if #available(tvOS 26.0, *) {
-            // Liquid Glass on tvOS 26+
-            Capsule()
-                .fill(isFocused ? Color.white : Color.white.opacity(0.001))
-                .glassEffect(.regular, in: .capsule)
-        } else if #available(tvOS 18.0, *) {
-            // Material on tvOS 18+
-            if isFocused {
-                Capsule().fill(Color.white)
-            } else {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-            }
+        if isFocused {
+            // Focused: solid white capsule (Apple TV standard)
+            Capsule().fill(Color.white)
         } else {
-            // Fallback
-            Capsule()
-                .fill(isFocused ? Color.white : Color.white.opacity(0.3))
+            // Unfocused: transparent - button blends with transport bar glass
+            Color.clear
         }
     }
 }
@@ -127,21 +115,12 @@ struct TransportBarMenu<Label: View, Content: View>: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        if #available(tvOS 26.0, *) {
-            Capsule()
-                .fill(isFocused ? Color.white : Color.white.opacity(0.001))
-                .glassEffect(.regular, in: .capsule)
-        } else if #available(tvOS 18.0, *) {
-            if isFocused {
-                Capsule().fill(Color.white)
-            } else {
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-            }
+        if isFocused {
+            // Focused: solid white capsule (Apple TV standard)
+            Capsule().fill(Color.white)
         } else {
-            Capsule()
-                .fill(isFocused ? Color.white : Color.white.opacity(0.3))
+            // Unfocused: transparent - button blends with transport bar glass
+            Color.clear
         }
     }
 }

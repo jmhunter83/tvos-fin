@@ -3,15 +3,27 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import UIKit
 
 extension UIDevice {
 
+    private static let fallbackVendorUUIDKey = "SwiftfinVendorUUIDFallback"
+
     static var vendorUUIDString: String {
-        current.identifierForVendor?.uuidString ?? UUID().uuidString
+        if let vendorID = current.identifierForVendor?.uuidString {
+            return vendorID
+        }
+
+        if let persistedFallback = UserDefaults.standard.string(forKey: fallbackVendorUUIDKey) {
+            return persistedFallback
+        }
+
+        let generatedFallback = UUID().uuidString
+        UserDefaults.standard.set(generatedFallback, forKey: fallbackVendorUUIDKey)
+        return generatedFallback
     }
 
     static var isPad: Bool {

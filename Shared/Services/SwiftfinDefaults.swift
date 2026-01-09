@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Defaults
@@ -194,6 +194,11 @@ extension Defaults.Keys {
             default: VideoPlayerActionButton.defaultMenuActionButtons
         )
         static let resumeOffset: Key<Int> = UserKey("resumeOffset", default: 0)
+
+        // Audio/Subtitle sync offsets (milliseconds)
+        static let audioOffset: Key<Int> = UserKey("audioOffset", default: 0)
+        static let subtitleOffset: Key<Int> = UserKey("subtitleOffset", default: 0)
+
         static let videoPlayerType: Key<VideoPlayerType> = UserKey("videoPlayerType", default: .swiftfin)
 
         enum Gesture {
