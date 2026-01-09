@@ -16,8 +16,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CFBundledisplayTitle</key>
-	<string>Jellyfin</string>
+	<key>CFBundleDisplayName</key>
+	<string>(tvos)fin</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>youtube</string>

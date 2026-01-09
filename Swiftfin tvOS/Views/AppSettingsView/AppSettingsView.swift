@@ -40,7 +40,7 @@ struct AppSettingsView: View {
     var body: some View {
         SplitFormWindowView()
             .descriptionView {
-                Image(.jellyfinBlobBlue)
+                Image(.tvosfinLogo)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: 400)

@@ -33,7 +33,7 @@ struct SettingsView: View {
     // MARK: - Body
 
     var body: some View {
-        Form(image: .jellyfinBlobBlue) {
+        Form(image: .tvosfinLogo) {
             serverSection
             videoPlayerSection
             customizationSection

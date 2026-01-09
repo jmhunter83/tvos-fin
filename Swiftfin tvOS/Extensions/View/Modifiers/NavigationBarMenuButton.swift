@@ -17,7 +17,7 @@ struct NavigationBarBrandingModifier: ViewModifier {
         content
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Image(.jellyfinBlobBlue)
+                    Image(.tvosfinLogo)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 100)

@@ -13,7 +13,7 @@ extension NavigationRoute {
 
     static let connectToServer = NavigationRoute(
         id: "connectToServer",
-        style: .sheet
+        style: .fullscreen
     ) {
         ConnectToServerView()
     }
