@@ -23,6 +23,10 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
         @EnvironmentObject
         private var manager: MediaPlayerManager
 
+        // Track focused button for navigation and default focus
+        @FocusState
+        private var focusedButton: VideoPlayerActionButton?
+
         /// Cached filtered buttons - computed once per body evaluation
         private var allActionButtons: [VideoPlayerActionButton] {
             // Combine bar + menu buttons, removing duplicates
@@ -131,10 +135,11 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                     }
 
                     view(for: button)
+                        .focused($focusedButton, equals: button)
                 }
             }
-            .focusSection()
             .labelStyle(.iconOnly)
+            .defaultFocus($focusedButton, .subtitles)
         }
     }
 }
