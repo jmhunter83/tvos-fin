@@ -13,9 +13,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct PlaybackQuality: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -43,11 +40,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     content
                 }
             } else {
-                TransportBarMenu(
-                    L10n.playbackQuality,
-                    focusBinding: focusBinding,
-                    buttonType: buttonType
-                ) {
+                TransportBarMenu(L10n.playbackQuality) {
                     Image(systemName: "tv.circle")
                 } content: {
                     Section(L10n.playbackQuality) {

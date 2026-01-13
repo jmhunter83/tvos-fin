@@ -12,9 +12,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct PlayPreviousItem: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -25,9 +22,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
             if let queue = manager.queue {
                 PlayPreviousItemContent(
                     queue: queue,
-                    isInMenu: isInMenu,
-                    focusBinding: focusBinding,
-                    buttonType: buttonType
+                    isInMenu: isInMenu
                 )
             }
         }
@@ -42,8 +37,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
         var queue: AnyMediaPlayerQueue
 
         let isInMenu: Bool
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
 
         private func playPrevious() {
             guard let previousItem = queue.previousItem else { return }
@@ -57,7 +50,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                 }
                 .disabled(queue.previousItem == nil)
             } else {
-                TransportBarButton(focusBinding: focusBinding, buttonType: buttonType) {
+                TransportBarButton {
                     playPrevious()
                 } label: {
                     Image(systemName: VideoPlayerActionButton.playPreviousItem.systemImage)

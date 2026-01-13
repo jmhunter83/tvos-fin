@@ -64,27 +64,27 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
         private func view(for button: VideoPlayerActionButton) -> some View {
             switch button {
             case .aspectFill:
-                AspectFill(focusBinding: $focusedButton, buttonType: button)
+                AspectFill()
             case .audio:
-                Audio(focusBinding: $focusedButton, buttonType: button)
+                Audio()
             case .autoPlay:
-                AutoPlay(focusBinding: $focusedButton, buttonType: button)
+                AutoPlay()
             case .episodes:
-                Episodes(focusBinding: $focusedButton, buttonType: button)
+                Episodes()
             case .gestureLock:
                 EmptyView()
             case .info:
-                Info(focusBinding: $focusedButton, buttonType: button)
+                Info()
             case .playbackSpeed:
-                PlaybackSpeed(focusBinding: $focusedButton, buttonType: button)
+                PlaybackSpeed()
             case .playbackQuality:
-                PlaybackQuality(focusBinding: $focusedButton, buttonType: button)
+                PlaybackQuality()
             case .playNextItem:
-                PlayNextItem(focusBinding: $focusedButton, buttonType: button)
+                PlayNextItem()
             case .playPreviousItem:
-                PlayPreviousItem(focusBinding: $focusedButton, buttonType: button)
+                PlayPreviousItem()
             case .subtitles:
-                Subtitles(focusBinding: $focusedButton, buttonType: button)
+                Subtitles()
             }
         }
 
@@ -98,6 +98,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
             HStack(spacing: 24) {
                 ForEach(buttons, id: \.self) { button in
                     view(for: button)
+                        .focused($focusedButton, equals: button)
                 }
             }
             .labelStyle(.iconOnly)

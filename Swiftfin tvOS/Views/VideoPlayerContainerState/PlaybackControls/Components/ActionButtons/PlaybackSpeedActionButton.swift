@@ -12,9 +12,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct PlaybackSpeed: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -48,11 +45,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     content
                 }
             } else {
-                TransportBarMenu(
-                    L10n.playbackSpeed,
-                    focusBinding: focusBinding,
-                    buttonType: buttonType
-                ) {
+                TransportBarMenu(L10n.playbackSpeed) {
                     Image(systemName: "speedometer")
                 } content: {
                     Section(L10n.playbackSpeed) {

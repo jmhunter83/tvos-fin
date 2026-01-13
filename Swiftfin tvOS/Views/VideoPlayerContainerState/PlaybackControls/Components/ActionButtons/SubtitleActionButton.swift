@@ -12,9 +12,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct Subtitles: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -67,11 +64,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     }
                     .assign(playbackItem.$selectedSubtitleStreamIndex, to: $selectedSubtitleStreamIndex)
                 } else {
-                    TransportBarMenu(
-                        L10n.subtitles,
-                        focusBinding: focusBinding,
-                        buttonType: buttonType
-                    ) {
+                    TransportBarMenu(L10n.subtitles) {
                         Image(systemName: systemImage)
                     } content: {
                         Section(L10n.subtitles) {

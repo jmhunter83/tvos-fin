@@ -57,23 +57,16 @@ private struct TransportBarFocusEffects: ViewModifier {
 /// Button with native Apple TV focus behavior (lift and glow effect).
 struct TransportBarButton<Label: View>: View {
 
-    var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-    let buttonType: VideoPlayerActionButton
+    @Environment(\.isFocused)
+    private var isFocused
+
     let action: () -> Void
     let label: () -> Label
 
-    private var isFocused: Bool {
-        focusBinding.wrappedValue == buttonType
-    }
-
     init(
-        focusBinding: FocusState<VideoPlayerActionButton?>.Binding,
-        buttonType: VideoPlayerActionButton,
         action: @escaping () -> Void,
         @ViewBuilder label: @escaping () -> Label
     ) {
-        self.focusBinding = focusBinding
-        self.buttonType = buttonType
         self.action = action
         self.label = label
     }
@@ -84,7 +77,6 @@ struct TransportBarButton<Label: View>: View {
                 .modifier(TransportBarFocusStyle(isFocused: isFocused))
         }
         .buttonStyle(.plain)
-        .focused(focusBinding, equals: buttonType)
         .modifier(TransportBarFocusEffects(isFocused: isFocused))
     }
 }
@@ -94,15 +86,11 @@ struct TransportBarButton<Label: View>: View {
 /// Menu with native Apple TV focus behavior. Keeps overlay visible while menu is open.
 struct TransportBarMenu<Label: View, Content: View>: View {
 
+    @Environment(\.isFocused)
+    private var isFocused
+
     @EnvironmentObject
     private var containerState: VideoPlayerContainerState
-
-    var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-    let buttonType: VideoPlayerActionButton
-
-    private var isFocused: Bool {
-        focusBinding.wrappedValue == buttonType
-    }
 
     @State
     private var wasFocused = false
@@ -115,14 +103,10 @@ struct TransportBarMenu<Label: View, Content: View>: View {
 
     init(
         _ title: String,
-        focusBinding: FocusState<VideoPlayerActionButton?>.Binding,
-        buttonType: VideoPlayerActionButton,
         @ViewBuilder label: @escaping () -> Label,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.title = title
-        self.focusBinding = focusBinding
-        self.buttonType = buttonType
         self.label = label
         self.content = content
     }
@@ -135,7 +119,6 @@ struct TransportBarMenu<Label: View, Content: View>: View {
                 .modifier(TransportBarFocusStyle(isFocused: isFocused))
         }
         .buttonStyle(.plain)
-        .focused(focusBinding, equals: buttonType)
         .modifier(TransportBarFocusEffects(isFocused: isFocused))
         .onChange(of: isFocused) { _, newValue in
             handleFocusChange(newValue)

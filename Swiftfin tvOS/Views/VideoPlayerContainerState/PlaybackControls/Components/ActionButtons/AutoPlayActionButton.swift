@@ -13,9 +13,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct AutoPlay: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Default(.VideoPlayer.autoPlayEnabled)
         private var isAutoPlayEnabled
 
@@ -39,7 +36,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                 }
                 .disabled(manager.queue == nil)
             } else {
-                TransportBarButton(focusBinding: focusBinding, buttonType: buttonType) {
+                TransportBarButton {
                     isAutoPlayEnabled.toggle()
                 } label: {
                     Image(systemName: systemImage)

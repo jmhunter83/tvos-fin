@@ -12,9 +12,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct AspectFill: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -40,7 +37,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     isAspectFilled.toggle()
                 }
             } else {
-                TransportBarButton(focusBinding: focusBinding, buttonType: buttonType) {
+                TransportBarButton {
                     isAspectFilled.toggle()
                 } label: {
                     Image(systemName: systemImage)

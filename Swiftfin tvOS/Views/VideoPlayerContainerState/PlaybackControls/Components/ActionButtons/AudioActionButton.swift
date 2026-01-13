@@ -12,9 +12,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
     struct Audio: View {
 
-        var focusBinding: FocusState<VideoPlayerActionButton?>.Binding
-        let buttonType: VideoPlayerActionButton
-
         @Environment(\.isInMenu)
         private var isInMenu
 
@@ -51,11 +48,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     }
                     .assign(playbackItem.$selectedAudioStreamIndex, to: $selectedAudioStreamIndex)
                 } else {
-                    TransportBarMenu(
-                        L10n.audio,
-                        focusBinding: focusBinding,
-                        buttonType: buttonType
-                    ) {
+                    TransportBarMenu(L10n.audio) {
                         Image(systemName: systemImage)
                     } content: {
                         Section(L10n.audio) {
