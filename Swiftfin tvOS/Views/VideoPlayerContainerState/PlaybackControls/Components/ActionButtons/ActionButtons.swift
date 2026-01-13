@@ -100,7 +100,6 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                     view(for: button)
                 }
             }
-            .focusSection()
             .labelStyle(.iconOnly)
             .defaultFocus($focusedButton, defaultFocusButton(from: buttons))
             .onChange(of: focusedButton) { oldValue, newValue in
