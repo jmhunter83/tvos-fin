@@ -34,11 +34,48 @@ This project focuses purely on the tvOS experience — no iOS, just Apple TV.
 
 ---
 
+## Beta Program
+
+**Reefy is currently in public beta.** Join to get early access and help shape the future of Apple TV media players.
+
+### Why I built this
+
+I forked Swiftfin with a simple goal: **get something modern, fully working, and up to par with tvOS**. I wanted to access my Jellyfin videos without dealing with outdated apps, broken navigation, or missing features.
+
+### What makes Reefy different
+
+- **Modern tvOS experience** — Native focus states, smooth navigation, tvOS 18 Liquid Glass effects
+- **Redesigned playback controls** — Clean transport bar that feels like Apple's own video players
+- **Fixed what was broken** — Resolved memory leaks, navigation traps, and stability issues from the original fork
+- **VLC-based playback** — Wide codec support for all your media files
+- **tvOS-native UI** — Full-screen detail views, native progress slider, proper remote interaction
+
+### Beta Tester Requirements
+
+- Apple TV (tvOS 17+ recommended, tvOS 18+ for full effects)
+- Jellyfin media server (any version)
+- Willingness to test and provide feedback
+
+### What I'm Looking For
+
+I need testers who will:
+- Actually use the app day-to-day
+- Report bugs and usability issues
+- Suggest improvements based on real usage
+
+### Join the Beta
+
+🔗 **[Beta Signup Form](https://forms.gle/tMqNyENpnSP42KXt6)**
+
+I'll be sending out TestFlight invites as capacity allows.
+
+---
+
 ## Installation
 
-Available via TestFlight.
+Available via TestFlight (beta program above).
 
-<!-- TestFlight link coming soon -->
+<!-- TestFlight link coming soon for public release -->
 
 ---
 
