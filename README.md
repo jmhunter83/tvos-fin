@@ -73,9 +73,7 @@ I'll be sending out TestFlight invites as capacity allows.
 
 ## Installation
 
-Available via TestFlight (beta program above).
-
-<!-- TestFlight link coming soon for public release -->
+Beta access is exclusively through the signup form above. TestFlight invites are sent to selected testers based on capacity and fit.
 
 ---
 
