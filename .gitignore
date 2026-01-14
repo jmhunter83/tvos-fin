@@ -105,3 +105,9 @@ XcodeConfig/DevelopmentTeam.xcconfig
 # Other
 .idea
 .serena/
+
+# Private/internal documentation
+task_plan.md
+DONATION_PITCH.md
+CLAUDE.md
+ChromeCastFramework.json
