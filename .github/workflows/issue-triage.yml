@@ -1,4 +1,5 @@
 name: Issue Triage with Claude
+# Triggered when new issues are opened
 
 on:
   issues:
