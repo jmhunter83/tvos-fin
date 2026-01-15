@@ -102,6 +102,11 @@ extension ItemView {
                 }
             }
             .ignoresSafeArea()
+            .onAppear {
+                if viewModel is SeriesItemViewModel {
+                    focusGuide.transition(to: "header")
+                }
+            }
         }
     }
 }

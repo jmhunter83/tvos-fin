@@ -142,15 +142,9 @@ extension ItemView {
             Button {
                 play(fromBeginning: true)
             } label: {
-                HStack(spacing: 15) {
-                    Image(systemName: "gobackward")
-                        .font(.title3)
-
-                    Text(L10n.playFromBeginning)
-                        .font(.headline)
-                }
-                .padding(.horizontal, 25)
-                .padding(.vertical, 10)
+                Image(systemName: "gobackward")
+                    .font(.title2)
+                    .frame(width: 50, height: 50)
             }
             .buttonStyle(
                 .tintedMaterial(
