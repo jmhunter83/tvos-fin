@@ -101,7 +101,7 @@ extension ItemView {
                     }
                     .buttonStyle(.tintedMaterial(tint: Color.jellyfinPurple, foregroundColor: .primary))
                     .isSelected(isCheckmarkSelected)
-                    .frame(minWidth: 90, maxWidth: .infinity)
+                    .frame(width: 100, height: 100)
                 }
 
                 // MARK: Toggle Favorite
@@ -113,7 +113,7 @@ extension ItemView {
                 }
                 .buttonStyle(.tintedMaterial(tint: .pink, foregroundColor: .primary))
                 .isSelected(isHeartSelected)
-                .frame(minWidth: 90, maxWidth: .infinity)
+                .frame(width: 100, height: 100)
 
                 // MARK: Watch a Trailer
 
@@ -123,7 +123,7 @@ extension ItemView {
                         externalTrailers: viewModel.item.remoteTrailers ?? []
                     )
                     .buttonStyle(.tintedMaterial(tint: .pink, foregroundColor: .primary))
-                    .frame(minWidth: 90, maxWidth: .infinity)
+                    .frame(width: 100, height: 100)
                 }
 
                 // MARK: Advanced Options

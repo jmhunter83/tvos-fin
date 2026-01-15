@@ -85,7 +85,7 @@ extension ItemView {
 
                 if multipleVersions {
                     VersionMenu(viewModel: viewModel, mediaSources: mediaSources)
-                        .frame(minWidth: 90, maxWidth: .infinity)
+                        .frame(width: 100, height: 100)
                 }
 
                 if hasProgress {
@@ -149,7 +149,7 @@ extension ItemView {
             .labelStyle(.iconOnly)
             .font(.title3)
             .fontWeight(.semibold)
-            .frame(minWidth: 90, maxWidth: .infinity)
+            .frame(width: 100, height: 100)
             .enabled(isEnabled)
         }
 
