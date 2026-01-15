@@ -28,18 +28,20 @@ final class SeasonItemViewModel: PagingLibraryViewModel<BaseItemDto>, Identifiab
 
     override func get(page: Int) async throws -> [BaseItemDto] {
 
+        guard let parent, let seriesID = parent.id else { return [] }
+
         var parameters = Paths.GetEpisodesParameters()
         parameters.enableUserData = true
         parameters.fields = .MinimumFields
         parameters.isMissing = Defaults[.Customization.shouldShowMissingEpisodes] ? nil : false
-        parameters.seasonID = parent!.id
+        parameters.seasonID = seriesID
         parameters.userID = userSession.user.id
 
 //        parameters.startIndex = page * pageSize
 //        parameters.limit = pageSize
 
         let request = Paths.getEpisodes(
-            seriesID: parent!.id!,
+            seriesID: seriesID,
             parameters: parameters
         )
         let response = try await userSession.client.send(request)

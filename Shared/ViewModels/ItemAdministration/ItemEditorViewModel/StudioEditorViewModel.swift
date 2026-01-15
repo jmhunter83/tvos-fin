@@ -18,7 +18,8 @@ final class StudioEditorViewModel: ItemEditorViewModel<NameGuidPair> {
         let elements = elements
             .compacted(using: \.name)
             .reduce(into: [String: NameGuidPair]()) { result, element in
-                result[element.name!] = element
+                guard let name = element.name else { return }
+                result[name] = element
             }
 
         trie.insert(contentsOf: elements)

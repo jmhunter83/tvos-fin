@@ -127,7 +127,7 @@ class DownloadTask: NSObject, ObservableObject {
     private func downloadMedia() async throws {
 
         guard let downloadFolder = item.downloadFolder else { return }
-        
+
         guard let itemID = item.id else {
             logger.error("Item missing ID for download")
             throw DownloadError.missingItemID
@@ -317,6 +317,6 @@ extension DownloadTask: URLSessionDownloadDelegate {
 extension DownloadTask: Identifiable {
 
     var id: String {
-        item.id!
+        item.id ?? UUID().uuidString
     }
 }

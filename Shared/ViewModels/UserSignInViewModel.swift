@@ -210,13 +210,15 @@ final class UserSignInViewModel: ViewModel {
             throw ErrorMessage(L10n.unknownError)
         }
 
-        let savedUserState = try dataStack.perform { transaction in
+        let savedUserState = try dataStack.perform { transaction -> UserState? in
             let newUser = transaction.create(Into<UserModel>())
 
             newUser.id = userState.id
             newUser.username = userState.username
 
-            let editServer = transaction.edit(serverModel)!
+            guard let editServer = transaction.edit(serverModel) else {
+                return nil
+            }
             editServer.users.insert(newUser)
 
             return newUser.state

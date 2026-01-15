@@ -134,12 +134,14 @@ final class SeriesItemViewModel: ItemViewModel {
 
     private func getSeasons() async throws -> [BaseItemDto] {
 
+        guard let seriesID = item.id else { return [] }
+
         var parameters = Paths.GetSeasonsParameters()
         parameters.isMissing = Defaults[.Customization.shouldShowMissingSeasons] ? nil : false
         parameters.userID = userSession.user.id
 
         let request = Paths.getSeasons(
-            seriesID: item.id!,
+            seriesID: seriesID,
             parameters: parameters
         )
         let response = try await userSession.client.send(request)

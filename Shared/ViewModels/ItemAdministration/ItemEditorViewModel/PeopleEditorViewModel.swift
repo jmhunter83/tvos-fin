@@ -18,7 +18,8 @@ final class PeopleEditorViewModel: ItemEditorViewModel<BaseItemPerson> {
         let elements = elements
             .compacted(using: \.name)
             .reduce(into: [String: BaseItemPerson]()) { result, element in
-                result[element.name!.localizedLowercase] = element
+                guard let name = element.name else { return }
+                result[name.localizedLowercase] = element
             }
 
         trie.insert(contentsOf: elements)
