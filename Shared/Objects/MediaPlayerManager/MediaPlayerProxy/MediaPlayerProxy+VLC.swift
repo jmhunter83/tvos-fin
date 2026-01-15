@@ -166,46 +166,50 @@ extension VLCMediaPlayerProxy {
                 VLCVideoPlayer(configuration: vlcConfiguration(for: playbackItem))
                     .proxy(proxy)
                     .onSecondsUpdated { newSeconds, info in
-                        if !isScrubbing {
-                            containerState.scrubbedSeconds.value = newSeconds
-                        }
+                        Task { @MainActor in
+                            if !isScrubbing {
+                                containerState.scrubbedSeconds.value = newSeconds
+                            }
 
-                        manager.seconds = newSeconds
+                            manager.seconds = newSeconds
 
-                        if let proxy = manager.proxy as? any VideoMediaPlayerProxy {
-                            proxy.videoSize.value = info.videoSize
+                            if let proxy = manager.proxy as? any VideoMediaPlayerProxy {
+                                proxy.videoSize.value = info.videoSize
+                            }
                         }
                     }
                     .onStateUpdated { state, info in
-                        manager.logger.trace("VLC state updated: \(state)")
+                        Task { @MainActor in
+                            manager.logger.trace("VLC state updated: \(state)")
 
-                        switch state {
-                        case .buffering,
-                             .esAdded,
-                             .opening:
-                            // TODO: figure out when to properly set to false
-                            manager.proxy?.isBuffering.value = true
-                        case .ended:
-                            // Live streams will send stopped/ended events
-                            guard !playbackItem.baseItem.isLiveStream else { return }
-                            manager.proxy?.isBuffering.value = false
-                            manager.ended()
-                        case .stopped: ()
-                        // Stopped is ignored as the `MediaPlayerManager`
-                        // should instead call this to be stopped, rather
-                        // than react to the event.
-                        case .error:
-                            manager.proxy?.isBuffering.value = false
-                            manager.error(ErrorMessage("VLC player is unable to perform playback"))
-                        case .playing:
-                            manager.proxy?.isBuffering.value = false
-                            manager.setPlaybackRequestStatus(status: .playing)
-                        case .paused:
-                            manager.setPlaybackRequestStatus(status: .paused)
-                        }
+                            switch state {
+                            case .buffering,
+                                 .esAdded,
+                                 .opening:
+                                // TODO: figure out when to properly set to false
+                                manager.proxy?.isBuffering.value = true
+                            case .ended:
+                                // Live streams will send stopped/ended events
+                                guard !playbackItem.baseItem.isLiveStream else { return }
+                                manager.proxy?.isBuffering.value = false
+                                manager.ended()
+                            case .stopped: ()
+                            // Stopped is ignored as the `MediaPlayerManager`
+                            // should instead call this to be stopped, rather
+                            // than react to the event.
+                            case .error:
+                                manager.proxy?.isBuffering.value = false
+                                manager.error(ErrorMessage("VLC player is unable to perform playback"))
+                            case .playing:
+                                manager.proxy?.isBuffering.value = false
+                                manager.setPlaybackRequestStatus(status: .playing)
+                            case .paused:
+                                manager.setPlaybackRequestStatus(status: .paused)
+                            }
 
-                        if let proxy = manager.proxy as? any VideoMediaPlayerProxy {
-                            proxy.videoSize.value = info.videoSize
+                            if let proxy = manager.proxy as? any VideoMediaPlayerProxy {
+                                proxy.videoSize.value = info.videoSize
+                            }
                         }
                     }
                     .onReceive(manager.$playbackItem) { playbackItem in

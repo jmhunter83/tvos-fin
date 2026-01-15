@@ -9,6 +9,7 @@
 import Combine
 
 /// A box for a `Published` value
+@MainActor
 class PublishedBox<Value>: ObservableObject {
 
     @Published
