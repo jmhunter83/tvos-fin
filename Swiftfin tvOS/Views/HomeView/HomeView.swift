@@ -78,5 +78,8 @@ struct HomeView: View {
                 viewModel.notificationsReceived.remove(.itemMetadataDidChange)
             }
         }
+        .onReceive(Notifications[.didRequestGlobalRefresh].publisher) { _ in
+            viewModel.send(.backgroundRefresh)
+        }
     }
 }
