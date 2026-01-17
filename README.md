@@ -65,7 +65,7 @@ I need testers who will:
 
 ### Join the Beta
 
-🔗 **[Beta Signup Form](https://forms.gle/tMqNyENpnSP42KXt6)**
+🔗 **[Beta Signup Form](BETA SIGNUP CLOSED 1.17.26)**
 
 I'll be sending out TestFlight invites as capacity allows.
 
