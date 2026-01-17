@@ -1,9 +1,9 @@
 name: Issue Triage with Claude
-# Triggered when new issues are opened
+# Triggered when issues are opened or when labels are added
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 permissions:
   issues: write
@@ -23,15 +23,41 @@ jobs:
             const issue = context.payload.issue;
             const title = issue.title;
             const body = issue.body || '';
+            const action = context.payload.action;
+            const labelAdded = context.payload.label?.name;
 
-            // Skip if already labeled (except 'bug' which is auto-added by template)
+            // Get existing labels
             const existingLabels = issue.labels.map(l => l.name);
             const hasTriageLabels = existingLabels.some(l =>
               l.startsWith('severity:') || l.startsWith('area:') || l.startsWith('type:')
             );
-            if (hasTriageLabels) {
-              console.log('Issue already triaged, skipping');
-              return;
+
+            // Determine mode: 'new' for opened issues, 'review' for labeled issues
+            const isReviewMode = action === 'labeled';
+
+            // For review mode: skip if bot added the label (avoid loops)
+            if (isReviewMode) {
+              // Skip if this label was added by github-actions bot
+              if (context.payload.sender?.login === 'github-actions[bot]') {
+                console.log('Label added by bot, skipping to avoid loop');
+                return;
+              }
+              // Only review if user added a triage label
+              const isTriageLabel = labelAdded?.startsWith('severity:') ||
+                                    labelAdded?.startsWith('area:') ||
+                                    labelAdded?.startsWith('type:');
+              if (!isTriageLabel) {
+                console.log('Non-triage label added, skipping review');
+                return;
+              }
+              console.log(`Review mode: user added "${labelAdded}"`);
+            } else {
+              // New issue mode: skip if already has triage labels
+              if (hasTriageLabels) {
+                console.log('Issue already triaged, skipping');
+                return;
+              }
+              console.log('New issue mode: auto-triaging');
             }
 
             // Available labels
@@ -118,11 +144,83 @@ jobs:
 
               console.log('Claude analysis:', analysis);
 
-              // Only apply labels if confidence >= 70
+              // Build correct labels based on analysis
+              const correctLabels = [];
+              const isFeatureRequest = analysis.issueType === 'feature_request';
+
+              if (isFeatureRequest) {
+                correctLabels.push('enhancement');
+              } else {
+                if (analysis.severity && severityLabels.includes(`severity: ${analysis.severity}`)) {
+                  correctLabels.push(`severity: ${analysis.severity}`);
+                }
+                if (analysis.type && typeLabels.includes(`type: ${analysis.type}`)) {
+                  correctLabels.push(`type: ${analysis.type}`);
+                }
+              }
+              if (analysis.area && analysis.area !== 'other' && areaLabels.includes(`area: ${analysis.area}`)) {
+                correctLabels.push(`area: ${analysis.area}`);
+              }
+
+              // REVIEW MODE: Check if user's labels need correction
+              if (isReviewMode) {
+                // Only correct if confidence >= 80 (higher bar for corrections)
+                if (analysis.confidence < 80) {
+                  console.log(`Confidence ${analysis.confidence}% too low for correction, skipping`);
+                  return;
+                }
+
+                // Find labels to remove and add
+                const userTriageLabels = existingLabels.filter(l =>
+                  l.startsWith('severity:') || l.startsWith('area:') || l.startsWith('type:')
+                );
+                const labelsToRemove = userTriageLabels.filter(l => !correctLabels.includes(l));
+                const labelsToAdd = correctLabels.filter(l => !existingLabels.includes(l));
+
+                // Only act if there's something to correct
+                if (labelsToRemove.length === 0 && labelsToAdd.length === 0) {
+                  console.log('User labels are correct, no changes needed');
+                  return;
+                }
+
+                // Remove incorrect labels
+                for (const label of labelsToRemove) {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    name: label
+                  });
+                }
+
+                // Add correct labels
+                if (labelsToAdd.length > 0) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: labelsToAdd
+                  });
+                }
+
+                console.log(`Corrected labels - removed: [${labelsToRemove.join(', ')}], added: [${labelsToAdd.join(', ')}]`);
+
+                // Comment explaining the correction
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: `🤖 **Label correction** (confidence: ${analysis.confidence}%)\n\n` +
+                        (labelsToRemove.length > 0 ? `Removed: ${labelsToRemove.map(l => `\`${l}\``).join(', ')}\n` : '') +
+                        (labelsToAdd.length > 0 ? `Added: ${labelsToAdd.map(l => `\`${l}\``).join(', ')}\n` : '') +
+                        `\n${analysis.reasoning}`
+                });
+                return;
+              }
+
+              // NEW ISSUE MODE: Apply labels if confidence >= 70
               if (analysis.confidence < 70) {
-                console.log(`Low confidence (${analysis.confidence}), skipping auto-label`);
-                // Add comment instead
-                const isFeatureRequest = analysis.issueType === 'feature_request';
+                console.log(`Low confidence (${analysis.confidence}%), suggesting instead of applying`);
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -138,48 +236,22 @@ jobs:
                 return;
               }
 
-              // Build labels to add
-              const labelsToAdd = [];
-
-              // Handle feature requests vs bugs differently
-              if (analysis.issueType === 'feature_request') {
-                labelsToAdd.push('enhancement');
-                // Don't add severity labels to feature requests
-              } else {
-                // It's a bug - add severity label
-                if (analysis.severity && severityLabels.includes(`severity: ${analysis.severity}`)) {
-                  labelsToAdd.push(`severity: ${analysis.severity}`);
-                }
-
-                // Add type label (crash, regression, performance) for bugs only
-                if (analysis.type && typeLabels.includes(`type: ${analysis.type}`)) {
-                  labelsToAdd.push(`type: ${analysis.type}`);
-                }
-              }
-
-              // Area label applies to both bugs and feature requests
-              if (analysis.area && analysis.area !== 'other' && areaLabels.includes(`area: ${analysis.area}`)) {
-                labelsToAdd.push(`area: ${analysis.area}`);
-              }
-
-              if (labelsToAdd.length > 0) {
+              if (correctLabels.length > 0) {
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issue.number,
-                  labels: labelsToAdd
+                  labels: correctLabels
                 });
 
-                console.log(`Applied labels: ${labelsToAdd.join(', ')}`);
+                console.log(`Applied labels: ${correctLabels.join(', ')}`);
 
-                // Add comment explaining the triage
-                const isFeatureRequest = analysis.issueType === 'feature_request';
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issue.number,
                   body: `🤖 **Auto-triaged** as ${isFeatureRequest ? 'Feature Request' : 'Bug'} (confidence: ${analysis.confidence}%)\n\n` +
-                        `Applied labels: ${labelsToAdd.map(l => `\`${l}\``).join(', ')}\n\n` +
+                        `Applied labels: ${correctLabels.map(l => `\`${l}\``).join(', ')}\n\n` +
                         `${analysis.reasoning}`
                 });
               }
