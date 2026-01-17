@@ -50,7 +50,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                 }
                 .disabled(queue.previousItem == nil)
             } else {
-                TransportBarButton {
+                TransportBarButton("PlayPrevious") {
                     playPrevious()
                 } label: {
                     Image(systemName: VideoPlayerActionButton.playPreviousItem.systemImage)

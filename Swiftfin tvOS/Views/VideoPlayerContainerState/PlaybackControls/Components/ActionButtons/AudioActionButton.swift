@@ -6,7 +6,10 @@
 // Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
+import os.log
 import SwiftUI
+
+private let audioDebugLog = Logger(subsystem: "org.jellyfin.swiftfin", category: "AudioButtonDebug")
 
 extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
 
@@ -41,7 +44,14 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
         }
 
         var body: some View {
+            let _ = audioDebugLog.debug("🔊 RENDER: playbackItem=\(manager.playbackItem != nil) isInMenu=\(isInMenu)")
+
             if let playbackItem = manager.playbackItem {
+                let _ = audioDebugLog
+                    .debug(
+                        "🔊 RENDER: audioStreams.count=\(playbackItem.audioStreams.count) selectedIndex=\(String(describing: selectedAudioStreamIndex))"
+                    )
+
                 if isInMenu {
                     Menu(L10n.audio, systemImage: systemImage) {
                         content(playbackItem: playbackItem)
@@ -57,6 +67,8 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                     }
                     .assign(playbackItem.$selectedAudioStreamIndex, to: $selectedAudioStreamIndex)
                 }
+            } else {
+                let _ = audioDebugLog.debug("🔊 RENDER: playbackItem is nil - not rendering")
             }
         }
     }

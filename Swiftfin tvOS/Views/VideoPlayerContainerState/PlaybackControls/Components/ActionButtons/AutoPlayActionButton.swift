@@ -36,7 +36,7 @@ extension VideoPlayer.PlaybackControls.NavigationBar.ActionButtons {
                 }
                 .disabled(manager.queue == nil)
             } else {
-                TransportBarButton {
+                TransportBarButton("AutoPlay") {
                     isAutoPlayEnabled.toggle()
                 } label: {
                     Image(systemName: systemImage)

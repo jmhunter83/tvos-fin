@@ -177,6 +177,14 @@ struct Marquee<Content>: View where Content: View {
         delay: Double,
         proxy: GeometryProxy
     ) {
+        // Guard against zero or near-zero geometry to prevent singular matrix warnings
+        guard proxy.size.width > 1, proxy.size.height > 1,
+              contentSize.width > 1, contentSize.height > 1
+        else {
+            stopAnimation()
+            return
+        }
+
         let contentFits = contentSize.width < proxy.size.width
         if contentFits {
             stopAnimation()
@@ -226,6 +234,9 @@ private struct _OffsetEffect: GeometryEffect {
     }
 
     func effectValue(size _: CGSize) -> ProjectionTransform {
-        ProjectionTransform(CGAffineTransform(translationX: offset.width, y: offset.height))
+        // Guard against invalid offset values that could produce singular transforms
+        let safeX = offset.width.isFinite ? offset.width : 0
+        let safeY = offset.height.isFinite ? offset.height : 0
+        return ProjectionTransform(CGAffineTransform(translationX: safeX, y: safeY))
     }
 }

@@ -11,6 +11,7 @@ import os.log
 import SwiftUI
 
 private let focusLog = Logger(subsystem: "org.jellyfin.swiftfin", category: "ActionButtonsFocus")
+private let audioDebugLog = Logger(subsystem: "org.jellyfin.swiftfin", category: "AudioButtonDebug")
 
 extension VideoPlayer.PlaybackControls.NavigationBar {
 
@@ -31,6 +32,11 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
 
         /// Cached filtered buttons - computed once per body evaluation
         private var allActionButtons: [VideoPlayerActionButton] {
+            // Debug: Log audio stream state at filter entry
+            let audioStreamsCount = manager.playbackItem?.audioStreams.count ?? -1
+            let audioStreamsEmpty = manager.playbackItem?.audioStreams.isEmpty
+            audioDebugLog.debug("🔊 FILTER: audioStreams.count=\(audioStreamsCount) isEmpty=\(String(describing: audioStreamsEmpty))")
+
             // Combine bar + menu buttons, removing duplicates
             var combined = rawBarActionButtons
             for button in rawMenuActionButtons where !combined.contains(button) {
@@ -60,7 +66,9 @@ extension VideoPlayer.PlaybackControls.NavigationBar {
                 excluded.insert(.episodes)
             }
 
-            return combined.filter { !excluded.contains($0) }
+            let finalButtons = combined.filter { !excluded.contains($0) }
+            audioDebugLog.debug("🔊 FILTER: excluded=\(excluded.map(\.rawValue)) final=\(finalButtons.map(\.rawValue))")
+            return finalButtons
         }
 
         @ViewBuilder

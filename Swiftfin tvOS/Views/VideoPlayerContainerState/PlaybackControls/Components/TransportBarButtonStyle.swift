@@ -20,18 +20,30 @@ private struct TransportBarFocusStyle: ViewModifier {
     let isFocused: Bool
 
     func body(content: Content) -> some View {
-        content
-            .font(.title2)
-            .fontWeight(.medium)
-            .foregroundStyle(.white)
-            .frame(width: 48, height: 48)
-            .background {
+        ZStack {
+            // Glass background layer
+            if #available(tvOS 26.0, *) {
+                Circle()
+                    .fill(.clear)
+                    .glassEffect(
+                        isFocused
+                            ? .regular.tint(.white.opacity(0.3))
+                            : .regular
+                    )
+            } else {
                 Circle()
                     .fill(.ultraThinMaterial)
                     .opacity(isFocused ? 1.0 : 0.7)
             }
-            .clipShape(Circle())
-            .applyGlassEffectIfAvailable()
+
+            // Icon layer - isolated from glass vibrancy
+            content
+                .font(.title2)
+                .fontWeight(.medium)
+                .foregroundStyle(.white)
+                .compositingGroup()
+        }
+        .frame(width: 48, height: 48)
     }
 }
 
@@ -61,19 +73,6 @@ private struct TransportBarFocusEffects: ViewModifier {
     }
 }
 
-// MARK: - View Extension for Glass Effect
-
-private extension View {
-    @ViewBuilder
-    func applyGlassEffectIfAvailable() -> some View {
-        if #available(tvOS 26.0, *) {
-            self.glassEffect(.regular.interactive())
-        } else {
-            self
-        }
-    }
-}
-
 // MARK: - Transport Bar Button
 
 /// Button with native Apple TV focus behavior using modern Liquid Glass design.
@@ -82,13 +81,16 @@ struct TransportBarButton<Label: View>: View {
     @Environment(\.isFocused)
     private var isFocused
 
+    let debugLabel: String
     let action: () -> Void
     let label: () -> Label
 
     init(
+        _ debugLabel: String = "button",
         action: @escaping () -> Void,
         @ViewBuilder label: @escaping () -> Label
     ) {
+        self.debugLabel = debugLabel
         self.action = action
         self.label = label
     }
@@ -99,7 +101,7 @@ struct TransportBarButton<Label: View>: View {
                 .modifier(TransportBarFocusStyle(isFocused: isFocused))
         }
         .buttonStyle(.plain)
-        .modifier(TransportBarFocusEffects(isFocused: isFocused))
+        .modifier(TransportBarFocusEffects(isFocused: isFocused, debugLabel: debugLabel))
     }
 }
 
