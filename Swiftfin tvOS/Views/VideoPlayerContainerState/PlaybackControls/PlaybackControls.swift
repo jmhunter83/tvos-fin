@@ -43,22 +43,6 @@ extension VideoPlayer {
         @State
         private var effectiveSafeArea: EdgeInsets = .zero
 
-        // Double-tap detection for 5-minute skip
-        @State
-        private var lastSkipDirection: SkipDirection? = nil
-        @State
-        private var lastSkipTime: Date = .distantPast
-        @State
-        private var skipIndicatorText: String? = nil
-
-        private enum SkipDirection {
-            case forward
-            case backward
-        }
-
-        private let doubleTapThreshold: TimeInterval = 0.5
-        private let longSkipDuration: Duration = .seconds(300) // 5 minutes
-
         private var isPresentingOverlay: Bool {
             containerState.isPresentingOverlay
         }
@@ -157,7 +141,7 @@ extension VideoPlayer {
 
         @ViewBuilder
         private var skipIndicator: some View {
-            if let text = skipIndicatorText {
+            if let text = containerState.skipIndicatorText {
                 Text(text)
                     .font(.system(size: 72, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
@@ -174,7 +158,7 @@ extension VideoPlayer {
 
                     // Skip indicator in center
                     skipIndicator
-                        .animation(.easeOut(duration: 0.2), value: skipIndicatorText)
+                        .animation(.easeOut(duration: 0.2), value: containerState.skipIndicatorText)
 
                     // Transport bar in bottom 15%
                     VStack {
@@ -192,6 +176,10 @@ extension VideoPlayer {
             .animation(.linear(duration: 0.1), value: isScrubbing)
             .animation(.bouncy(duration: 0.4), value: isPresentingSupplement)
             .animation(.bouncy(duration: 0.25), value: isPresentingOverlay)
+            .onDisappear {
+                // Clean up any active scrubbing timers when view disappears
+                containerState.cleanupScrubbing()
+            }
             .onChange(of: isPresentingOverlay) { _, isPresenting in
                 if isPresenting {
                     // Focus action buttons when overlay appears
@@ -216,52 +204,34 @@ extension VideoPlayer {
                     }
                     manager.togglePlayPause()
 
-                case (.leftArrow, _):
-                    // Skip backward (only when not scrubbing and action buttons not focused)
-                    // When action buttons are focused, let SwiftUI handle navigation
+                case (.leftArrow, .began):
+                    // Skip backward press began (only when not scrubbing and action buttons not focused)
                     if !isScrubbing && !containerState.isActionButtonsFocused {
-                        let now = Date()
-                        if lastSkipDirection == .backward,
-                           now.timeIntervalSince(lastSkipTime) < doubleTapThreshold
-                        {
-                            // Double-tap: skip 5 minutes
-                            manager.proxy?.jumpBackward(longSkipDuration)
-                            skipIndicatorText = "−5:00"
-                            lastSkipDirection = nil
-                        } else {
-                            // Single tap: skip configured interval
-                            manager.proxy?.jumpBackward(jumpBackwardInterval.rawValue)
-                            lastSkipDirection = .backward
-                        }
-                        lastSkipTime = now
-                        // Auto-hide indicator after delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            skipIndicatorText = nil
-                        }
+                        containerState.handleArrowPressBegan(
+                            direction: .backward,
+                            skipAmount: jumpBackwardInterval.rawValue
+                        )
                     }
 
-                case (.rightArrow, _):
-                    // Skip forward (only when not scrubbing and action buttons not focused)
-                    // When action buttons are focused, let SwiftUI handle navigation
+                case (.leftArrow, .ended), (.leftArrow, .cancelled):
+                    // Skip backward press ended
+                    if containerState.isScrubbing(direction: .backward) {
+                        containerState.handleArrowPressEnded()
+                    }
+
+                case (.rightArrow, .began):
+                    // Skip forward press began (only when not scrubbing and action buttons not focused)
                     if !isScrubbing && !containerState.isActionButtonsFocused {
-                        let now = Date()
-                        if lastSkipDirection == .forward,
-                           now.timeIntervalSince(lastSkipTime) < doubleTapThreshold
-                        {
-                            // Double-tap: skip 5 minutes
-                            manager.proxy?.jumpForward(longSkipDuration)
-                            skipIndicatorText = "+5:00"
-                            lastSkipDirection = nil
-                        } else {
-                            // Single tap: skip configured interval
-                            manager.proxy?.jumpForward(jumpForwardInterval.rawValue)
-                            lastSkipDirection = .forward
-                        }
-                        lastSkipTime = now
-                        // Auto-hide indicator after delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            skipIndicatorText = nil
-                        }
+                        containerState.handleArrowPressBegan(
+                            direction: .forward,
+                            skipAmount: jumpForwardInterval.rawValue
+                        )
+                    }
+
+                case (.rightArrow, .ended), (.rightArrow, .cancelled):
+                    // Skip forward press ended
+                    if containerState.isScrubbing(direction: .forward) {
+                        containerState.handleArrowPressEnded()
                     }
 
                 case (.menu, _):

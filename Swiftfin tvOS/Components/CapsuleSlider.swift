@@ -45,73 +45,43 @@ private struct CapsuleSliderContent: SliderContentView {
     @EnvironmentObject
     var sliderState: SliderContainerState<Double>
 
-    /// Height: normal 8pt, focused 10pt, editing 14pt
+    /// Height: normal 8pt, focused 10pt, editing 12pt
     private var barHeight: CGFloat {
         if sliderState.isEditing {
-            return 14
-        } else if sliderState.isFocused {
-            return 10
-        } else {
-            return 8
+            return 12
         }
+        return sliderState.isFocused ? 10 : 8
+    }
+
+    /// Scale: normal 1.0, focused 1.05, editing 1.08
+    private var scaleEffect: CGFloat {
+        if sliderState.isEditing {
+            return 1.08
+        }
+        return sliderState.isFocused ? 1.05 : 1.0
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Skip mode indicator - shown when clicks detected
-            if sliderState.isEditing {
-                HStack(spacing: 4) {
-                    // Back arrow and time
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .bold))
-                    Text(sliderState.currentSkipLabel)
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-
-                    // Divider
-                    Text("|")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(.white.opacity(0.5))
-                        .padding(.horizontal, 6)
-
-                    // Forward time and arrow
-                    Text(sliderState.currentSkipLabel)
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .bold))
+        // Progress bar with visual states
+        ProgressView(value: sliderState.value, total: sliderState.total)
+            .progressViewStyle(PlaybackProgressViewStyle(cornerStyle: .round))
+            .frame(height: barHeight)
+            .overlay {
+                // Border when focused or editing
+                if sliderState.isFocused || sliderState.isEditing {
+                    RoundedRectangle(cornerRadius: barHeight / 2)
+                        .stroke(
+                            sliderState.isEditing ? Color.white.opacity(0.6) : Color.white.opacity(0.3),
+                            lineWidth: sliderState.isEditing ? 2 : 1
+                        )
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .overlay {
-                            Capsule()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        }
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
-
-            // Progress bar with visual states
-            ProgressView(value: sliderState.value, total: sliderState.total)
-                .progressViewStyle(PlaybackProgressViewStyle(cornerStyle: .round))
-                .frame(height: barHeight)
-                .overlay {
-                    // Glow border when editing
-                    if sliderState.isEditing {
-                        RoundedRectangle(cornerRadius: barHeight / 2)
-                            .stroke(Color.white.opacity(0.6), lineWidth: 2)
-                            .shadow(color: .white.opacity(0.4), radius: 8)
-                    } else if sliderState.isFocused {
-                        RoundedRectangle(cornerRadius: barHeight / 2)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    }
-                }
-                .scaleEffect(sliderState.isEditing ? 1.1 : (sliderState.isFocused ? 1.05 : 1.0))
-                .animation(.easeInOut(duration: 0.2), value: sliderState.isFocused)
-                .animation(.easeInOut(duration: 0.15), value: sliderState.isEditing)
-        }
-        .animation(.easeInOut(duration: 0.2), value: sliderState.isEditing)
+            .shadow(
+                color: sliderState.isEditing ? Color.white.opacity(0.3) : Color.clear,
+                radius: sliderState.isEditing ? 8 : 0
+            )
+            .scaleEffect(scaleEffect)
+            .animation(.easeInOut(duration: 0.2), value: sliderState.isFocused)
+            .animation(.easeInOut(duration: 0.15), value: sliderState.isEditing)
     }
 }

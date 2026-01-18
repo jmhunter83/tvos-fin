@@ -57,19 +57,33 @@ struct SliderContainer<Value: BinaryFloatingPoint>: UIViewRepresentable {
     }
 }
 
+/// A slider container that displays progress, handles focus, and supports swipe-to-scrub.
+/// Click-first paradigm: click to enter scrub mode, swipe to scrub, click to commit.
 final class UISliderContainer<Value: BinaryFloatingPoint>: UIControl {
-
-    // MARK: - Skip Amounts (in seconds, will be converted to Value units)
-
-    /// Skip amounts for 1, 2, 3 clicks (15s, 2min, 5min)
-    private let skipAmounts: [Double] = [15, 120, 300]
 
     private let onEditingChanged: (Bool) -> Void
     private let total: Value
     private let valueBinding: Binding<Value>
 
-    private var swipeGestureRecognizer: DirectionalPanGestureRecognizer!
-    private var selectGestureRecognizer: UITapGestureRecognizer!
+    // MARK: - Scrub Mode State
+
+    /// Whether user is in active scrub mode (after clicking to enter)
+    private var isInScrubMode: Bool = false
+
+    /// Value being scrubbed (separate from committed value)
+    private var scrubbedValue: Value = 0
+
+    /// Value when scrub mode was entered (for cancel/revert)
+    private var valueAtScrubStart: Value = 0
+
+    /// Damping factor: higher = slower/more precise scrubbing
+    /// Dynamic based on video duration for consistent feel
+    private var dampingFactor: CGFloat {
+        // Base damping of 5.0, scales up for longer videos
+        // 10 min video = 5.0, 2hr video = 12.0
+        let totalSeconds = CGFloat(total)
+        return max(5.0, min(15.0, totalSeconds / 600))
+    }
 
     private lazy var progressHostingController: UIHostingController<AnyView> = {
         let hostingController = UIHostingController(rootView: AnyView(view.environmentObject(containerState)))
@@ -82,12 +96,6 @@ final class UISliderContainer<Value: BinaryFloatingPoint>: UIControl {
 
     let containerState: SliderContainerState<Value>
     let view: AnyView
-
-    // MARK: - Click Counter State
-
-    private var clickCount: Int = 0
-    private var clickResetTimer: Timer?
-    private let clickTimeout: TimeInterval = 0.4 // Time window for multi-clicks
 
     init(
         value: Binding<Value>,
@@ -108,17 +116,12 @@ final class UISliderContainer<Value: BinaryFloatingPoint>: UIControl {
         super.init(frame: .zero)
 
         setupViews()
-        setupGestureRecognizers()
+        setupGestures()
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    deinit {
-        clickResetTimer?.invalidate()
-        clickResetTimer = nil
     }
 
     private func setupViews() {
@@ -131,108 +134,135 @@ final class UISliderContainer<Value: BinaryFloatingPoint>: UIControl {
         ])
     }
 
-    private func setupGestureRecognizers() {
-        // Swipe gesture for skip direction
-        swipeGestureRecognizer = DirectionalPanGestureRecognizer(
-            direction: .horizontal,
-            target: self,
-            action: #selector(didSwipe)
-        )
-        addGestureRecognizer(swipeGestureRecognizer)
-
-        // Select/click gesture to set skip magnitude
-        selectGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(didSelect))
-        selectGestureRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.select.rawValue)]
-        addGestureRecognizer(selectGestureRecognizer)
+    private func setupGestures() {
+        // Pan gesture for swipe-to-scrub
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan))
+        panGesture.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.indirect.rawValue)]
+        addGestureRecognizer(panGesture)
     }
 
-    // MARK: - Click Handling
-
-    @objc
-    private func didSelect() {
-        clickCount += 1
-        clickResetTimer?.invalidate()
-
-        // Cap at 3 clicks
-        if clickCount > 3 {
-            clickCount = 3
-        }
-
-        // Update state for visual feedback
-        containerState.clickCount = clickCount
-        containerState.isEditing = true
-        onEditingChanged(true)
-
-        // Reset click count after timeout
-        clickResetTimer = Timer.scheduledTimer(withTimeInterval: clickTimeout, repeats: false) { [weak self] _ in
-            self?.resetClickState()
-        }
-    }
-
-    private func resetClickState() {
-        clickCount = 0
-        containerState.clickCount = 0
-        containerState.isEditing = false
-        onEditingChanged(false)
-        clickResetTimer?.invalidate()
-        clickResetTimer = nil
-    }
-
-    // MARK: - Swipe Handling
-
-    @objc
-    private func didSwipe(_ gestureRecognizer: UIPanGestureRecognizer) {
-        guard gestureRecognizer.state == .ended else { return }
-
-        let velocity = gestureRecognizer.velocity(in: self).x
-
-        // Need minimum velocity to trigger skip
-        guard abs(velocity) > 200 else { return }
-
-        // Determine skip amount based on click count (default to 15s if no clicks)
-        let skipIndex = max(0, clickCount - 1)
-        _ = skipAmounts[min(skipIndex, skipAmounts.count - 1)]
-
-        // Convert seconds to Value units (assuming total represents 100% progress)
-        // The value is normalized 0-100, so we need to convert skip seconds to that scale
-        // This requires knowing the runtime, which we don't have directly
-        // For now, assume the slider value represents percentage (0-100)
-        // and we need to convert skipSeconds relative to runtime
-
-        // Actually, looking at how this is used, the total is 100 (resolution)
-        // and the value maps to Duration. Let me calculate skip as percentage.
-        // Since we don't have runtime here, we'll skip by a fixed percentage
-        // that approximates the skip amounts for typical content
-
-        // For a 2-hour movie (7200s):
-        // 15s = 0.21%, 120s = 1.67%, 300s = 4.17%
-        // Using these as reasonable percentages of the 0-100 scale:
-        let skipPercentages: [Double] = [0.5, 3.0, 7.0] // More noticeable skips
-        let skipAmount = skipPercentages[min(skipIndex, skipPercentages.count - 1)]
-
-        let direction: Value = velocity > 0 ? 1 : -1
-        let newValue = containerState.value + Value(skipAmount) * direction
-        let clampedValue = clamp(newValue, min: 0, max: containerState.total)
-
-        // Apply the skip
-        containerState.value = clampedValue
-        valueBinding.wrappedValue = clampedValue
-        sendActions(for: .valueChanged)
-
-        // Reset click state after skip
-        resetClickState()
-    }
+    // MARK: - Focus
 
     override var canBecomeFocused: Bool {
         true
     }
 
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        let wasFocused = containerState.isFocused
         containerState.isFocused = (context.nextFocusedView == self)
 
-        // Reset click state when losing focus
-        if context.nextFocusedView != self {
-            resetClickState()
+        // Exit scrub mode if we lose focus
+        if wasFocused && !containerState.isFocused && isInScrubMode {
+            cancelScrubMode()
+        }
+    }
+
+    // MARK: - Press Handling (Click to Enter/Exit Scrub Mode)
+
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        guard containerState.isFocused else {
+            super.pressesBegan(presses, with: event)
+            return
+        }
+
+        for press in presses {
+            switch press.type {
+            case .select:
+                // Click toggles scrub mode
+                if isInScrubMode {
+                    commitScrubMode()
+                } else {
+                    enterScrubMode()
+                }
+                return
+            case .menu:
+                // Menu cancels scrub mode (reverts to original position)
+                if isInScrubMode {
+                    cancelScrubMode()
+                    return
+                }
+            default:
+                break
+            }
+        }
+
+        super.pressesBegan(presses, with: event)
+    }
+
+    // MARK: - Scrub Mode Management
+
+    private func enterScrubMode() {
+        isInScrubMode = true
+        valueAtScrubStart = valueBinding.wrappedValue
+        scrubbedValue = valueBinding.wrappedValue
+        containerState.isEditing = true
+        onEditingChanged(true)
+    }
+
+    private func commitScrubMode() {
+        isInScrubMode = false
+        // Commit the scrubbed value
+        valueBinding.wrappedValue = scrubbedValue
+        containerState.isEditing = false
+        onEditingChanged(false)
+    }
+
+    private func cancelScrubMode() {
+        isInScrubMode = false
+        // Revert to original value
+        scrubbedValue = valueAtScrubStart
+        containerState.value = valueAtScrubStart
+        valueBinding.wrappedValue = valueAtScrubStart
+        containerState.isEditing = false
+        onEditingChanged(false)
+    }
+
+    // MARK: - Pan Gesture Handling
+
+    @objc
+    private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard containerState.isFocused else { return }
+
+        switch gesture.state {
+        case .began:
+            // Auto-enter scrub mode on pan start if not already in it
+            if !isInScrubMode {
+                enterScrubMode()
+            }
+
+        case .changed:
+            guard isInScrubMode else { return }
+
+            let translation = gesture.translation(in: self)
+
+            // Calculate value delta with damping for precision
+            // Touchpad displacement is mapped to percentage of total duration
+            let scrubDelta = Value(translation.x / dampingFactor)
+
+            // Map pixel delta to value delta (based on view width to total ratio)
+            let viewWidth = bounds.width > 0 ? bounds.width : 1000 // Fallback for zero width
+            let valueDelta = scrubDelta / Value(viewWidth) * total
+
+            // Update scrubbed position (clamped to valid range)
+            scrubbedValue = max(0, min(total, scrubbedValue + valueDelta))
+
+            // Update visual state
+            containerState.value = scrubbedValue
+
+            // Update binding for real-time time label updates
+            valueBinding.wrappedValue = scrubbedValue
+
+            // Reset translation for incremental updates
+            gesture.setTranslation(.zero, in: self)
+
+        case .ended, .cancelled:
+            // On gesture end, commit if in scrub mode
+            if isInScrubMode {
+                commitScrubMode()
+            }
+
+        default:
+            break
         }
     }
 }

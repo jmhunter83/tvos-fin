@@ -307,10 +307,36 @@ extension VideoPlayer {
             }
 
             // Send event to SwiftUI for overlay toggle handling
-            onPressEvent.send((type: buttonPress.type, phase: buttonPress.phase))
+            onPressEvent.send((type: buttonPress.type, phase: .began))
 
             // Call super to allow UIKit focus navigation to work
             super.pressesBegan(presses, with: event)
+        }
+
+        override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+            guard let buttonPress = presses.first else {
+                super.pressesEnded(presses, with: event)
+                return
+            }
+
+            // Send ended event to SwiftUI for hold detection
+            onPressEvent.send((type: buttonPress.type, phase: .ended))
+
+            // Call super to allow UIKit focus navigation to work
+            super.pressesEnded(presses, with: event)
+        }
+
+        override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+            guard let buttonPress = presses.first else {
+                super.pressesCancelled(presses, with: event)
+                return
+            }
+
+            // Treat cancelled as ended for hold detection
+            onPressEvent.send((type: buttonPress.type, phase: .cancelled))
+
+            // Call super
+            super.pressesCancelled(presses, with: event)
         }
     }
 }
